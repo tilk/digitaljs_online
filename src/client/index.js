@@ -21,6 +21,14 @@ function runquery() {
     for (const [filename, file] of Object.entries(filedata)) {
         data[filename] = file.result;
     }
+    if (circuit) {
+        circuit.shutdown();
+        circuit = undefined;
+    }
+    if (paper) {
+        paper.remove();
+        paper = undefined;
+    }
     $.ajax({
         type: 'POST',
         url: '/api/yosys2digitaljs',
@@ -29,19 +37,17 @@ function runquery() {
         dataType: 'json',
         success: (responseData, status, xhr) => {
             $('form').find('input, textarea, button, select').removeAttr('disabled');
-            if (circuit) circuit.stopListening();
-            if (paper) paper.remove();
             circuit = new digitaljs.Circuit(responseData.output);
             paper = circuit.displayOn($('<div>').appendTo($('#paper')));
         },
         error: (request, status, error) => {
             $('form').find('input, textarea, button, select').removeAttr('disabled');
-            $('<div class="alert alert-danger" role="alert"></div>')
+            $('<div class="alert alert-danger alert-dismissible fade show" role="alert"></div>')
                 .append('<button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>')
                 .append(document.createTextNode(request.responseJSON.error))
-                .append($("pre").text(request.responseJSON.messages.stderr))
-                .alert()
-                .insertAfter('form');
+                .append($("<pre>").text(request.responseJSON.messages.stderr.trim()))
+                .insertBefore($('#paper'))
+                .alert();
         }
     });
 }
