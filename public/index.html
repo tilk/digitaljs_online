@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Yosys2digitaljs Demonstrator</title>
+</head>
+<body>
+<div class="container-fluid">
+<h1 class="text-primary">Yosys2digitaljs Demo</h1>
+<p>This is a demonstration page for the
+<a href="https://github.com/tilk/digitaljs">DigitalJS</a> digital logic simulator and the
+<a href="https://github.com/tilk/yosys2digitaljs">yosys2digitaljs</a> netlist format converter,
+by <a href="http://www.tilk.eu/">Marek Materzok</a>,
+<a href="http://www.ii.uni.wroc.pl/">University of Wrocław</a>.
+This demo was made possible by the 
+<a href="http://www.clifford.at/yosys/">Yosys</a> open-source hardware synthesis framework.
+</p>
+<p>Enter your SystemVerilog code and press the button to start the simulation.</p>
+<form class="container-fluid">
+<div class="form-group">
+<textarea id="code">
+// Write your modules here!
+module circuit();
+endmodule
+</textarea>
+</div>
+<div class="form-group">
+<label for="files">Additional SystemVerilog files:</label>
+<input type="file" class="form-control-file" id="files" multiple="true">
+</div>
+<button type="submit" class="btn btn-primary">Synthesize and simulate!</button>
+</form>
+<div id="paper">
+</div>
+</div>
+</body>
+</html>
