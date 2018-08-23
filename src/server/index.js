@@ -11,5 +11,5 @@ app.post('/api/yosys2digitaljs', (req, res) => {
     .catch(ret => res.status(500).json({error: 'Yosys failed', messages: ret}));
 });
 
-app.listen(8080);
+app.listen(8080, 'localhost');
 
