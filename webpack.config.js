@@ -1,6 +1,7 @@
 const path = require("path");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
 const CleanWebpackPlugin = require("clean-webpack-plugin");
+const CopyWebpackPlugin = require('copy-webpack-plugin');
 
 const outputDirectory = "dist";
 
@@ -46,6 +47,9 @@ module.exports = {
       template: "./public/index.html",
       inject: 'head'
 //      favicon: "./public/favicon.ico"
-    })
+    }),
+    new CopyWebpackPlugin([
+        { from: 'node_modules/yosys2digitaljs/tests/*.sv', to: 'examples', flatten: true }
+    ])
   ]
 };
