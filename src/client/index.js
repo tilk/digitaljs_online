@@ -10,9 +10,14 @@ import * as digitaljs from 'digitaljs';
 
 const examples = [
     ['sr_gate.sv', 'SR latch'],
-    ['cycleadder_arst.sv', 'Accumulating adder'],
+    ['sr_neg_gate.sv', 'SR latch (negated inputs)'],
+    ['dlatch_gate.sv', 'D latch'],
+    ['dff_masterslave.sv', 'D flip-flop (master-slave)'],
     ['fulladder.sv', 'Full adder'],
     ['serialadder.sv', 'Serial adder'],
+    ['cycleadder_arst.sv', 'Accumulating adder'],
+    ['prio_encoder.sv', 'Priority encoder'],
+    ['lfsr.sv', 'Linear-feedback shift register'],
     ['rom.sv', 'ROM'],
     ['ram.sv', 'RAM'],
 ];
