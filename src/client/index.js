@@ -1,3 +1,5 @@
+"use strict";
+
 import 'bootstrap';
 import './scss/app.scss';
 import 'codemirror/mode/verilog/verilog';
@@ -6,6 +8,15 @@ import CodeMirror from 'codemirror/lib/codemirror';
 import $ from 'jquery';
 import * as digitaljs from 'digitaljs';
 
+const examples = [
+    ['sr_gate.sv', 'SR latch'],
+    ['cycleadder_arst.sv', 'Accumulating adder'],
+    ['fulladder.sv', 'Full adder'],
+    ['serialadder.sv', 'Serial adder'],
+    ['rom.sv', 'ROM'],
+    ['ram.sv', 'RAM'],
+];
+
 $(window).on('load', () => {
 const editor = CodeMirror.fromTextArea(document.getElementById("code"), {
     lineNumbers: true,
@@ -13,6 +24,15 @@ const editor = CodeMirror.fromTextArea(document.getElementById("code"), {
         name: 'verilog'
     }
 });
+
+for (const [file, name] of examples) {
+    $('<a class="dropdown-item" href="">').text(name).appendTo($('#excodes')).click((e) => {
+        e.preventDefault();
+        $.get('/examples/' + file, (data, status) => {
+            editor.setValue(data);
+        });
+    });
+}
 
 let circuit, paper, filedata, filenum;
 
@@ -52,7 +72,7 @@ function runquery() {
     });
 }
 
-$('button').click(e => {
+$('button[type=submit]').click(e => {
     e.preventDefault();
     $('form').find('input, textarea, button, select').attr('disabled', 'disabled');
     filedata = {};

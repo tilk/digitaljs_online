@@ -17,8 +17,18 @@ The source files <a href="https://github.com/tilk/digitaljs_online">are on Githu
 This demo was made possible by the 
 <a href="http://www.clifford.at/yosys/">Yosys</a> open-source hardware synthesis framework.
 </p>
-<p>Enter your SystemVerilog code and press the button to start the simulation.</p>
+<p>Enter your SystemVerilog code, or load an example by using the dropdown menu,
+and press the button to start the simulation.</p>
 <form class="container-fluid">
+<div class="form-group">
+<div class="dropdown">
+  <button class="btn btn-secondary dropdown-toggle" type="button" id="excode" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+    Load example code
+  </button>
+  <div class="dropdown-menu" aria-labelledby="excode" id="excodes">
+  </div>
+</div>
+</div>
 <div class="form-group">
 <textarea id="code">
 // Write your modules here!
