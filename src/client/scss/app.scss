@@ -34,6 +34,11 @@ div#cont {
     overflow: hidden;
 }
 
+div#paper > div {
+    min-height: 100%;
+    min-width: 100%;
+}
+
 .CodeMirror {
     height: auto !important;
 }
