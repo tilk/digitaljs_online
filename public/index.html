@@ -6,7 +6,8 @@
 <title>Yosys2digitaljs Demonstrator</title>
 </head>
 <body>
-<div class="container-fluid">
+<div id="cont">
+<div id="editor" class="container-fluid">
 <h1 class="text-primary">Yosys2digitaljs Demo</h1>
 <p>This is a demonstration page for the
 <a href="https://github.com/tilk/digitaljs">DigitalJS</a> digital logic simulator and the
@@ -19,7 +20,7 @@ This demo was made possible by the
 </p>
 <p>Enter your SystemVerilog code, or load an example by using the dropdown menu,
 and press the button to start the simulation.</p>
-<form class="container-fluid">
+<form>
 <div class="form-group">
 <div class="dropdown">
   <button class="btn btn-secondary dropdown-toggle" type="button" id="excode" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
@@ -42,6 +43,7 @@ endmodule
 </div>
 <button type="submit" class="btn btn-primary">Synthesize and simulate!</button>
 </form>
+</div>
 <div id="paper">
 </div>
 </div>

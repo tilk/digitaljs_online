@@ -7,6 +7,7 @@ import 'codemirror/lib/codemirror.css';
 import CodeMirror from 'codemirror/lib/codemirror';
 import $ from 'jquery';
 import * as digitaljs from 'digitaljs';
+import Split from 'split.js';
 
 const examples = [
     ['sr_gate.sv', 'SR latch'],
@@ -23,6 +24,12 @@ const examples = [
 ];
 
 $(window).on('load', () => {
+
+Split(['#editor', '#paper'], {
+    sizes: [50, 50],
+    minSize: 200
+});
+
 const editor = CodeMirror.fromTextArea(document.getElementById("code"), {
     lineNumbers: true,
     mode: {
