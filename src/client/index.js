@@ -78,7 +78,7 @@ function runquery() {
                 .append('<button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>')
                 .append(document.createTextNode(request.responseJSON.error))
                 .append($("<pre>").text(request.responseJSON.messages.stderr.trim()))
-                .insertBefore($('#paper'))
+                .appendTo($('#editor'))
                 .alert();
         }
     });
