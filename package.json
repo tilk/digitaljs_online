@@ -4,12 +4,13 @@
   "description": "Online demonstration for DigitalJS",
   "main": "src/server/index.js",
   "scripts": {
+    "prepare": "npm run build",
     "start": "node src/server/index.js",
     "build": "webpack --mode production",
     "server": "nodemon src/server/index.js",
     "client": "webpack-dev-server --mode development --devtool inline-source-map --hot --no-open",
     "dev": "concurrently \"npm run server\" \"npm run client\"",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "true"
   },
   "author": "Marek Materzok",
   "license": "BSD-2-Clause",
