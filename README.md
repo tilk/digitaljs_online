@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/tilk/digitaljs_online.svg?branch=master)](https://travis-ci.org/tilk/digitaljs_online)
+[![Build Status](https://travis-ci.com/tilk/digitaljs_online.svg?branch=master)](https://travis-ci.com/tilk/digitaljs_online)
 # digitaljs_online
 This is an online demonstration for [DigitalJS](https://github.com/tilk/digitaljs)
 and [Yosys2digitaljs](https://github.com/tilk/yosys2digitaljs). It is a web app
