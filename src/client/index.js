@@ -8,6 +8,7 @@ import CodeMirror from 'codemirror/lib/codemirror';
 import $ from 'jquery';
 import * as digitaljs from 'digitaljs';
 import Split from 'split.js';
+import { saveAs } from 'file-saver';
 
 const examples = [
     ['sr_gate.sv', 'SR latch'],
@@ -64,11 +65,7 @@ function updatebuttons() {
     $('#toolbar').find('button[name=next]').prop('disabled', running || !circuit.hasPendingEvents);
 }
 
-function runquery() {
-    const data = {'_input.sv': editor.getValue()};
-    for (const [filename, file] of Object.entries(filedata)) {
-        data[filename] = file.result;
-    }
+function destroycircuit() {
     if (circuit) {
         circuit.shutdown();
         circuit = undefined;
@@ -79,6 +76,29 @@ function runquery() {
     }
     loading = true;
     updatebuttons();
+}
+
+function mkcircuit(data) {
+    loading = false;
+    $('form').find('input, textarea, button, select').prop('disabled', false);
+    circuit = new digitaljs.Circuit(data);
+    circuit.on('userChange', () => {
+        updatebuttons();
+    });
+    circuit.on('postUpdateGates', (tick) => {
+        $('#tick').val(tick);
+    });
+    circuit.start();
+    paper = circuit.displayOn($('<div>').appendTo($('#paper')));
+    updatebuttons();
+}
+
+function runquery() {
+    const data = {'_input.sv': editor.getValue()};
+    for (const [filename, file] of Object.entries(filedata)) {
+        data[filename] = file.result;
+    }
+    destroycircuit();
     $.ajax({
         type: 'POST',
         url: '/api/yosys2digitaljs',
@@ -86,17 +106,11 @@ function runquery() {
         data: JSON.stringify(data),
         dataType: 'json',
         success: (responseData, status, xhr) => {
-            loading = false;
-            $('form').find('input, textarea, button, select').prop('disabled', false);
-            circuit = new digitaljs.Circuit(responseData.output);
-            circuit.on('userChange', () => {
-                updatebuttons();
-            });
-            circuit.start();
-            paper = circuit.displayOn($('<div>').appendTo($('#paper')));
-            updatebuttons();
+            mkcircuit(responseData.output);
         },
         error: (request, status, error) => {
+            loading = false;
+            updatebuttons();
             $('form').find('input, textarea, button, select').prop('disabled', false);
             $('<div class="alert alert-danger alert-dismissible fade show" role="alert"></div>')
                 .append('<button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>')
@@ -141,6 +155,27 @@ $('button[name=single]').click(e => {
 $('button[name=next]').click(e => {
     while (!circuit.updateGates());
     updatebuttons();
+});
+
+$('button[name=load]').click(e => {
+    $('#input_load').trigger('click');
+});
+
+$('#input_load').change(e => {
+    const files = e.target.files;
+    if (!files) return;
+    const reader = new FileReader();
+    destroycircuit();
+    reader.onload = (e) => {
+        mkcircuit(JSON.parse(e.target.result));
+    };
+    reader.readAsText(files[0]);
+});
+
+$('button[name=save]').click(e => {
+    const json = circuit.toJSON();
+    const blob = new Blob([JSON.stringify(json)], {type: "application/json;charset=utf-8"});
+    saveAs(blob, 'circuit.json');
 });
 
 updatebuttons();

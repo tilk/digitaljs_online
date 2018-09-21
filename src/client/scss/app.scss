@@ -36,6 +36,17 @@ div#toolbar {
     box-sizing: border-box;
 }
 
+div#toolbar > div {
+    position: relative;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+input#tick {
+    background: white;
+    width: 5em;
+}
+
 div#cont {
     display: flex;
     position: absolute;
