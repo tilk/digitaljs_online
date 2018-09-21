@@ -46,7 +46,23 @@ for (const [file, name] of examples) {
     });
 }
 
-let circuit, paper, filedata, filenum;
+let loading = false, circuit, paper, filedata, filenum;
+
+function updatebuttons() {
+    if (circuit == undefined) {
+        $('#toolbar').find('button').prop('disabled', true);
+        if (!loading) $('#toolbar').find('button[name=load]').prop('disabled', false);
+        return;
+    }
+    $('#toolbar').find('button[name=load]').prop('disabled', false);
+    $('#toolbar').find('button[name=save]').prop('disabled', false);
+    $('#toolbar').find('button[name=link]').prop('disabled', false);
+    const running = circuit.running;
+    $('#toolbar').find('button[name=pause]').prop('disabled', !running);
+    $('#toolbar').find('button[name=resume]').prop('disabled', running);
+    $('#toolbar').find('button[name=single]').prop('disabled', running);
+    $('#toolbar').find('button[name=next]').prop('disabled', running || !circuit.hasPendingEvents);
+}
 
 function runquery() {
     const data = {'_input.sv': editor.getValue()};
@@ -61,6 +77,8 @@ function runquery() {
         paper.remove();
         paper = undefined;
     }
+    loading = true;
+    updatebuttons();
     $.ajax({
         type: 'POST',
         url: '/api/yosys2digitaljs',
@@ -68,12 +86,18 @@ function runquery() {
         data: JSON.stringify(data),
         dataType: 'json',
         success: (responseData, status, xhr) => {
-            $('form').find('input, textarea, button, select').removeAttr('disabled');
+            loading = false;
+            $('form').find('input, textarea, button, select').prop('disabled', false);
             circuit = new digitaljs.Circuit(responseData.output);
+            circuit.on('userChange', () => {
+                updatebuttons();
+            });
+            circuit.start();
             paper = circuit.displayOn($('<div>').appendTo($('#paper')));
+            updatebuttons();
         },
         error: (request, status, error) => {
-            $('form').find('input, textarea, button, select').removeAttr('disabled');
+            $('form').find('input, textarea, button, select').prop('disabled', false);
             $('<div class="alert alert-danger alert-dismissible fade show" role="alert"></div>')
                 .append('<button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>')
                 .append(document.createTextNode(request.responseJSON.error))
@@ -86,7 +110,7 @@ function runquery() {
 
 $('button[type=submit]').click(e => {
     e.preventDefault();
-    $('form').find('input, textarea, button, select').attr('disabled', 'disabled');
+    $('form').find('input, textarea, button, select').prop('disabled', true);
     filedata = {};
     filenum = document.getElementById('files').files.length;
     for (const file of document.getElementById('files').files) {
@@ -97,7 +121,29 @@ $('button[type=submit]').click(e => {
         reader.readAsText(file);
     }
     if (filenum == 0) runquery();
-})
+});
+
+$('button[name=pause]').click(e => {
+    circuit.stop();
+    updatebuttons();
+});
+
+$('button[name=resume]').click(e => {
+    circuit.start();
+    updatebuttons();
+});
+
+$('button[name=single]').click(e => {
+    circuit.updateGates();
+    updatebuttons();
+});
+
+$('button[name=next]').click(e => {
+    while (!circuit.updateGates());
+    updatebuttons();
+});
+
+updatebuttons();
 
 });
 

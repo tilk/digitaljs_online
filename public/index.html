@@ -6,6 +6,20 @@
 <title>Yosys2digitaljs demo</title>
 </head>
 <body>
+<div class="btn-toolbar" role="toolbar" aria-label="Toolbar" id="toolbar">
+<div class="btn-group mr-2" role="group" aria-label="Time control">
+<button name="pause" type="button" class="btn btn-secondary" title="Pause simulation" disabled="true">⏸</button>
+<button name="resume" type="button" class="btn btn-secondary" title="Resume simulation" disabled="true">▶</button>
+<button name="single" type="button" class="btn btn-secondary" title="Run single time step" disabled="true">→</button>
+<button name="next" type="button" class="btn btn-secondary" title="Run until next event" disabled="true">⇥</button>
+<span class="btn-group-text" id="tick"></span>
+</div>
+<div class="btn-group mr-2" role="group" aria-label="Saving and sharing">
+<button name="load" type="button" class="btn btn-secondary" title="Load from file" disabled="true">📁</button>
+<button name="save" type="button" class="btn btn-secondary" title="Save to file" disabled="true">💾</button>
+<button name="link" type="button" class="btn btn-secondary" title="Get link" disabled="true">🔗</button>
+</div>
+</div>
 <div id="cont">
 <div id="editor" class="container-fluid">
 <h1 class="text-primary">Yosys2digitaljs Demo</h1>

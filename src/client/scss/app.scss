@@ -26,11 +26,21 @@ form {
     margin-bottom: 1em;
 }
 
+div#toolbar {
+    position: absolute;
+    top: 0px;
+    height: 55px;
+    width: 100%;
+    padding: 5px;
+    border-bottom: 5px solid #eee;
+    box-sizing: border-box;
+}
+
 div#cont {
     display: flex;
     position: absolute;
-    height: 100%;
     width: 100%;
+    top: 55px; bottom: 0;
     overflow: hidden;
 }
 
