@@ -1,5 +1,9 @@
 @import "~bootstrap/scss/bootstrap";
 
+.popover {
+    max-width: 600px !important;
+}
+
 .gutter {
     background-color: #eee;
 

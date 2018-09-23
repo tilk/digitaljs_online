@@ -1,6 +1,8 @@
 "use strict";
 
+import 'popper.js';
 import 'bootstrap';
+import ClipboardJS from 'clipboard';
 import './scss/app.scss';
 import 'codemirror/mode/verilog/verilog';
 import 'codemirror/lib/codemirror.css';
@@ -178,7 +180,63 @@ $('button[name=save]').click(e => {
     saveAs(blob, 'circuit.json');
 });
 
+$('button[name=link]')
+    .popover({
+        container: 'body',
+        content: 'blah',
+        trigger: 'manual',
+        html: true
+    })
+    .popover('disable')
+    .click(e => {
+        const json = circuit.toJSON();
+        $.ajax({
+            type: 'POST',
+            url: '/api/storeCircuit',
+            contentType: "application/json",
+            data: JSON.stringify(json),
+            dataType: 'json',
+            success: (responseData, status, xhr) => {
+                history.replaceState(null, null, '#'+responseData);
+                $(e.target)
+                    .attr('data-content', '<div class="btn-toolbar"><div class="input-group mr-2"><input readonly="readonly" id="linkinput" type="text" value="' + window.location.href + '"></div><div class="btn-group mr-2"><button type="button" data-clipboard-target="#linkinput" class="btn clipboard btn-secondary">Copy link</button></div></div>')
+                    .popover('enable')
+                    .popover('show');
+            }
+        });
+    })
+    .on("hidden.bs.popover", function() { $(this).popover('disable') });
+
+$('html').click(e => {
+    if (!$(e.target).closest('button[name=link]').length &&
+        !$(e.target).closest('.popover').length)
+        $('button[name=link]').popover('hide');
+});
+
+window.onpopstate = () => {
+    const hash = window.location.hash.slice(1);
+    if (loading || !hash) return;
+    destroycircuit();
+    $.ajax({
+        type: 'GET',
+        url: '/api/circuit/' + hash,
+        dataType: 'json',
+        success: (responseData, status, xhr) => {
+            mkcircuit(responseData);
+        },
+        error: (request, status, error) => {
+            loading = false;
+            updatebuttons();
+        }
+    });
+};
+
 updatebuttons();
+
+if (window.location.hash.slice(1))
+    window.onpopstate();
+
+new ClipboardJS('button.clipboard');
 
 });
 
