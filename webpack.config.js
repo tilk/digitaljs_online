@@ -50,6 +50,7 @@ module.exports = {
 //      favicon: "./public/favicon.ico"
     }),
     new CopyWebpackPlugin([
+        { from: 'public/*.+(ico|png|svg|webmanifest)', to: '', flatten: true },
         { from: 'node_modules/yosys2digitaljs/tests/*.sv', to: 'examples', flatten: true }
     ])
   ]
