@@ -92,6 +92,7 @@ function destroycircuit() {
     }
     loading = true;
     updatebuttons();
+    $('#monitorbox button').prop('disabled', true).off();
 }
 
 function mkcircuit(data) {
@@ -109,6 +110,16 @@ function mkcircuit(data) {
     monitorview = new digitaljs.MonitorView({model: monitor, el: $('#monitor') });
     paper = circuit.displayOn($('<div>').appendTo($('#paper')));
     updatebuttons();
+    $('#monitorbox button').prop('disabled', false);
+    $('#monitorbox button[name=ppt_up]').on('click', (e) => { monitorview.pixelsPerTick *= 2; });
+    $('#monitorbox button[name=ppt_down]').on('click', (e) => { monitorview.pixelsPerTick /= 2; });
+    $('#monitorbox button[name=left]').on('click', (e) => { 
+        monitorview.live = false; monitorview.start -= monitorview._width / monitorview.pixelsPerTick / 4;
+    });
+    $('#monitorbox button[name=right]').on('click', (e) => { 
+        monitorview.live = false; monitorview.start += monitorview._width / monitorview.pixelsPerTick / 4;
+    });
+    $('#monitorbox button[name=live]').on('click', (e) => { monitorview.live = true; });
 }
 
 function runquery() {
@@ -248,6 +259,7 @@ window.onpopstate = () => {
 };
 
 updatebuttons();
+$('#monitorbox button').prop('disabled', true).off();
 
 if (window.location.hash.slice(1))
     window.onpopstate();
