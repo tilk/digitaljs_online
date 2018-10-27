@@ -21,7 +21,7 @@
     cursor: ns-resize;
 }
 
-#paper, #editor {
+#paper, #editor, #monitorbox {
     box-sizing: border-box;
     overflow: auto;
 }
@@ -51,11 +51,14 @@ input#tick {
     width: 5em;
 }
 
+div#cont1 {
+    position: absolute;
+    top: 55px; bottom: 0;
+    width: 100%;
+}
+
 div#cont {
     display: flex;
-    position: absolute;
-    width: 100%;
-    top: 55px; bottom: 0;
     overflow: hidden;
 }
 

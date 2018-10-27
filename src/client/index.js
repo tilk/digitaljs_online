@@ -33,6 +33,12 @@ Split(['#editor', '#paper'], {
     minSize: 200
 });
 
+Split(['#cont', '#monitorbox'], {
+    sizes: [100, 0],
+    minSize: 0,
+    direction: 'vertical'
+});
+
 const editor = CodeMirror.fromTextArea(document.getElementById("code"), {
     lineNumbers: true,
     mode: {
@@ -49,7 +55,7 @@ for (const [file, name] of examples) {
     });
 }
 
-let loading = false, circuit, paper, filedata, filenum;
+let loading = false, circuit, paper, monitor, monitorview, filedata, filenum;
 
 function updatebuttons() {
     if (circuit == undefined) {
@@ -76,6 +82,14 @@ function destroycircuit() {
         paper.remove();
         paper = undefined;
     }
+    if (monitorview) {
+        monitorview.shutdown();
+        monitorview = undefined;
+    }
+    if (monitor) {
+        monitor.stopListening();
+        monitor = undefined;
+    }
     loading = true;
     updatebuttons();
 }
@@ -91,6 +105,8 @@ function mkcircuit(data) {
         $('#tick').val(tick);
     });
     circuit.start();
+    monitor = new digitaljs.Monitor(circuit);
+    monitorview = new digitaljs.MonitorView({model: monitor, el: $('#monitor') });
     paper = circuit.displayOn($('<div>').appendTo($('#paper')));
     updatebuttons();
 }
