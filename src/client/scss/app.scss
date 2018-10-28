@@ -80,6 +80,24 @@ div.digitaljs_logo {
 }
 
 div#monitorbox > div.btn-toolbar {
-    margin: 5px;
+    padding: 5px;
+    position: sticky;
+    top: 0;
+    background: white;
+    z-index: 1;
+}
+
+div#monitor > table button {
+    @extend .btn;
+    @extend .btn-sm;
+    @extend .btn-warning;
+    font-size: 0.9em;
+}
+
+div#monitor > table td {
+    padding: 0em 0.2em;
+    &:last-of-type {
+        padding-right: 0em;
+    }
 }
 

@@ -33,7 +33,7 @@ Split(['#editor', '#paper'], {
     minSize: 200
 });
 
-Split(['#cont', '#monitorbox'], {
+const vsplit = Split(['#cont', '#monitorbox'], {
     sizes: [100, 0],
     minSize: 0,
     direction: 'vertical'
@@ -71,6 +71,7 @@ function updatebuttons() {
     $('#toolbar').find('button[name=resume]').prop('disabled', running);
     $('#toolbar').find('button[name=single]').prop('disabled', running);
     $('#toolbar').find('button[name=next]').prop('disabled', running || !circuit.hasPendingEvents);
+    monitorview.autoredraw = !running;
 }
 
 function destroycircuit() {
@@ -119,7 +120,11 @@ function mkcircuit(data) {
     $('#monitorbox button[name=right]').on('click', (e) => { 
         monitorview.live = false; monitorview.start += monitorview._width / monitorview.pixelsPerTick / 4;
     });
-    $('#monitorbox button[name=live]').on('click', (e) => { monitorview.live = true; });
+    $('#monitorbox button[name=live]').toggleClass('active', monitorview.live).on('click', (e) => { monitorview.live = !monitorview.live; });
+    monitorview.on('change:live', (live) => { $('#monitorbox button[name=live]').toggleClass('active', live) });
+    monitor.on('add', () => {
+        if (vsplit.getSizes()[1] == 0) vsplit.setSizes([75, 25]);
+    });
 }
 
 function runquery() {
