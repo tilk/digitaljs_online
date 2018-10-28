@@ -115,16 +115,32 @@ function mkcircuit(data) {
     $('#monitorbox button[name=ppt_up]').on('click', (e) => { monitorview.pixelsPerTick *= 2; });
     $('#monitorbox button[name=ppt_down]').on('click', (e) => { monitorview.pixelsPerTick /= 2; });
     $('#monitorbox button[name=left]').on('click', (e) => { 
-        monitorview.live = false; monitorview.start -= monitorview._width / monitorview.pixelsPerTick / 4;
+        monitorview.live = false; monitorview.start -= monitorview.width / monitorview.pixelsPerTick / 4;
     });
     $('#monitorbox button[name=right]').on('click', (e) => { 
-        monitorview.live = false; monitorview.start += monitorview._width / monitorview.pixelsPerTick / 4;
+        monitorview.live = false; monitorview.start += monitorview.width / monitorview.pixelsPerTick / 4;
     });
-    $('#monitorbox button[name=live]').toggleClass('active', monitorview.live).on('click', (e) => { monitorview.live = !monitorview.live; });
+    $('#monitorbox button[name=live]')
+        .toggleClass('active', monitorview.live)
+        .on('click', (e) => { 
+            monitorview.live = !monitorview.live;
+            if (monitorview.live) monitorview.start = circuit.tick - monitorview.width / monitorview.pixelsPerTick;
+        });
     monitorview.on('change:live', (live) => { $('#monitorbox button[name=live]').toggleClass('active', live) });
     monitor.on('add', () => {
         if (vsplit.getSizes()[1] == 0) vsplit.setSizes([75, 25]);
     });
+    const show_range = () => {
+        $('#monitorbox input[name=rangel]').val(Math.round(monitorview.start));
+        $('#monitorbox input[name=rangeh]').val(Math.round(monitorview.start + monitorview.width / monitorview.pixelsPerTick));
+    };
+    const show_scale = () => {
+        $('#monitorbox input[name=scale]').val(monitorview.gridStep);
+    };
+    show_range();
+    show_scale();
+    monitorview.on('change:start', show_range);
+    monitorview.on('change:pixelsPerTick', show_scale);
 }
 
 function runquery() {

@@ -85,6 +85,18 @@ div#monitorbox > div.btn-toolbar {
     top: 0;
     background: white;
     z-index: 1;
+    input[type=text] {
+        background: white;
+    }
+    input[name=scale] {
+        width: 4em;
+    }
+    input[name=rangel] {
+        text-align: right;
+    }
+    input[name=rangel], input[name=rangeh] {
+        width: 6em;
+    }
 }
 
 div#monitor > table button {

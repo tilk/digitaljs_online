@@ -87,10 +87,26 @@ endmodule
 <button name="ppt_up" type="button" class="btn btn-secondary" title="Increase pixels per tick" disabled="true">+</button>
 <button name="ppt_down" type="button" class="btn btn-secondary" title="Decrease pixels per tick" disabled="true">-</button>
 </div>
+<div class="input-group mr-2">
+<div class="input-group-prepend">
+<span class="input-group-text" title="Scale">scale</span>
+</div>
+<input type="text" class="form-control" disabled="disabled" name="scale" />
+</div>
 <div class="btn-group mr-2" role="group" aria-label="Time control">
 <button name="live" type="button" class="btn btn-secondary" title="Live mode" disabled="true">▶</button>
 <button name="left" type="button" class="btn btn-secondary" title="Move left" disabled="true">←</button>
 <button name="right" type="button" class="btn btn-secondary" title="Move right" disabled="true">→</button>
+</div>
+<div class="input-group mr-2">
+<div class="input-group-prepend">
+<span class="input-group-text" title="Display range">range</span>
+</div>
+<input type="text" class="form-control" disabled="disabled" name="rangel" />
+<div class="input-group-prepend input-group-append">
+<span class="input-group-text">–</span>
+</div>
+<input type="text" class="form-control" disabled="disabled" name="rangeh" />
 </div>
 </div>
 <div id="monitor">
