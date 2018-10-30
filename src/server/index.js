@@ -10,7 +10,7 @@ Promise.resolve((async () => {
     const db = await sqlite.open('./database.sqlite', { Promise });
 	await db.migrate(); // ({ force: 'last' });
 
-    app.use(bodyParser.json());
+    app.use(bodyParser.json({limit: '50mb'}));
 
     app.post('/api/yosys2digitaljs', async (req, res) => {
 		try {
