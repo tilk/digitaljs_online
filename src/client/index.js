@@ -33,6 +33,12 @@ Split(['#editor', '#paper'], {
     minSize: 200
 });
 
+const vsplit = Split(['#cont', '#monitorbox'], {
+    sizes: [100, 0],
+    minSize: 0,
+    direction: 'vertical'
+});
+
 const editor = CodeMirror.fromTextArea(document.getElementById("code"), {
     lineNumbers: true,
     mode: {
@@ -49,7 +55,7 @@ for (const [file, name] of examples) {
     });
 }
 
-let loading = false, circuit, paper, filedata, filenum;
+let loading = false, circuit, paper, monitor, monitorview, filedata, filenum;
 
 function updatebuttons() {
     if (circuit == undefined) {
@@ -65,6 +71,7 @@ function updatebuttons() {
     $('#toolbar').find('button[name=resume]').prop('disabled', running);
     $('#toolbar').find('button[name=single]').prop('disabled', running);
     $('#toolbar').find('button[name=next]').prop('disabled', running || !circuit.hasPendingEvents);
+    monitorview.autoredraw = !running;
 }
 
 function destroycircuit() {
@@ -76,8 +83,17 @@ function destroycircuit() {
         paper.remove();
         paper = undefined;
     }
+    if (monitorview) {
+        monitorview.shutdown();
+        monitorview = undefined;
+    }
+    if (monitor) {
+        monitor.stopListening();
+        monitor = undefined;
+    }
     loading = true;
     updatebuttons();
+    $('#monitorbox button').prop('disabled', true).off();
 }
 
 function mkcircuit(data) {
@@ -91,8 +107,40 @@ function mkcircuit(data) {
         $('#tick').val(tick);
     });
     circuit.start();
+    monitor = new digitaljs.Monitor(circuit);
+    monitorview = new digitaljs.MonitorView({model: monitor, el: $('#monitor') });
     paper = circuit.displayOn($('<div>').appendTo($('#paper')));
     updatebuttons();
+    $('#monitorbox button').prop('disabled', false);
+    $('#monitorbox button[name=ppt_up]').on('click', (e) => { monitorview.pixelsPerTick *= 2; });
+    $('#monitorbox button[name=ppt_down]').on('click', (e) => { monitorview.pixelsPerTick /= 2; });
+    $('#monitorbox button[name=left]').on('click', (e) => { 
+        monitorview.live = false; monitorview.start -= monitorview.width / monitorview.pixelsPerTick / 4;
+    });
+    $('#monitorbox button[name=right]').on('click', (e) => { 
+        monitorview.live = false; monitorview.start += monitorview.width / monitorview.pixelsPerTick / 4;
+    });
+    $('#monitorbox button[name=live]')
+        .toggleClass('active', monitorview.live)
+        .on('click', (e) => { 
+            monitorview.live = !monitorview.live;
+            if (monitorview.live) monitorview.start = circuit.tick - monitorview.width / monitorview.pixelsPerTick;
+        });
+    monitorview.on('change:live', (live) => { $('#monitorbox button[name=live]').toggleClass('active', live) });
+    monitor.on('add', () => {
+        if (vsplit.getSizes()[1] == 0) vsplit.setSizes([75, 25]);
+    });
+    const show_range = () => {
+        $('#monitorbox input[name=rangel]').val(Math.round(monitorview.start));
+        $('#monitorbox input[name=rangeh]').val(Math.round(monitorview.start + monitorview.width / monitorview.pixelsPerTick));
+    };
+    const show_scale = () => {
+        $('#monitorbox input[name=scale]').val(monitorview.gridStep);
+    };
+    show_range();
+    show_scale();
+    monitorview.on('change:start', show_range);
+    monitorview.on('change:pixelsPerTick', show_scale);
 }
 
 function runquery() {
@@ -232,6 +280,7 @@ window.onpopstate = () => {
 };
 
 updatebuttons();
+$('#monitorbox button').prop('disabled', true).off();
 
 if (window.location.hash.slice(1))
     window.onpopstate();

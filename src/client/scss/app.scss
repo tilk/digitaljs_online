@@ -21,7 +21,7 @@
     cursor: ns-resize;
 }
 
-#paper, #editor {
+#paper, #editor, #monitorbox {
     box-sizing: border-box;
     overflow: auto;
 }
@@ -51,11 +51,14 @@ input#tick {
     width: 5em;
 }
 
+div#cont1 {
+    position: absolute;
+    top: 55px; bottom: 0;
+    width: 100%;
+}
+
 div#cont {
     display: flex;
-    position: absolute;
-    width: 100%;
-    top: 55px; bottom: 0;
     overflow: hidden;
 }
 
@@ -76,4 +79,37 @@ div.digitaljs_logo {
     background-size: 100%;
 }
 
+div#monitorbox > div.btn-toolbar {
+    padding: 5px;
+    position: sticky;
+    top: 0;
+    background: white;
+    z-index: 1;
+    input[type=text] {
+        background: white;
+    }
+    input[name=scale] {
+        width: 4em;
+    }
+    input[name=rangel] {
+        text-align: right;
+    }
+    input[name=rangel], input[name=rangeh] {
+        width: 6em;
+    }
+}
+
+div#monitor > table button {
+    @extend .btn;
+    @extend .btn-sm;
+    @extend .btn-warning;
+    font-size: 0.9em;
+}
+
+div#monitor > table td {
+    padding: 0em 0.2em;
+    &:last-of-type {
+        padding-right: 0em;
+    }
+}
 
