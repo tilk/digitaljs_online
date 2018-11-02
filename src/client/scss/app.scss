@@ -1,5 +1,9 @@
 @import "~bootstrap/scss/bootstrap";
 
+body {
+    overflow: hidden;
+}
+
 .popover {
     max-width: 600px !important;
 }
