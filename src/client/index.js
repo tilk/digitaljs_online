@@ -165,7 +165,7 @@ function runquery() {
             $('<div class="alert alert-danger alert-dismissible fade show" role="alert"></div>')
                 .append('<button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>')
                 .append(document.createTextNode(request.responseJSON.error))
-                .append($("<pre>").text(request.responseJSON.messages.stderr.trim()))
+                .append($("<pre>").text(request.responseJSON.messages.yosys_stderr.trim()))
                 .appendTo($('#editor'))
                 .alert();
         }
