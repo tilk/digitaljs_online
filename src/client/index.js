@@ -41,8 +41,6 @@ Split({
     columnSnapOffset: 0
 });
 
-console.log('wuuut');
-
 const editor = CodeMirror.fromTextArea(document.getElementById("code"), {
     lineNumbers: true,
     mode: {
@@ -59,7 +57,7 @@ for (const [file, name] of examples) {
     });
 }
 
-let loading = false, circuit, paper, monitor, monitorview, filedata, filenum;
+let loading = false, circuit, paper, monitor, monitorview, monitormem, filedata, filenum;
 
 function updatebuttons() {
     if (circuit == undefined) {
@@ -79,6 +77,10 @@ function updatebuttons() {
 }
 
 function destroycircuit() {
+    if (monitor) {
+        // remember which signals were monitored
+        monitormem = monitor.getWiresDesc();
+    }
     if (circuit) {
         circuit.shutdown();
         circuit = undefined;
@@ -112,6 +114,10 @@ function mkcircuit(data) {
     });
     circuit.start();
     monitor = new digitaljs.Monitor(circuit);
+    if (monitormem) {
+        monitor.loadWiresDesc(monitormem);
+        monitormem = undefined;
+    }
     monitorview = new digitaljs.MonitorView({model: monitor, el: $('#monitor') });
     paper = circuit.displayOn($('<div>').appendTo($('#paper')));
     updatebuttons();
