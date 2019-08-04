@@ -14,7 +14,7 @@ Promise.resolve((async () => {
 
     app.post('/api/yosys2digitaljs', async (req, res) => {
         try {
-            const data = await yosys2digitaljs.process_files(req.body);
+            const data = await yosys2digitaljs.process_files(req.body.files, req.body.options);
             yosys2digitaljs.io_ui(data.output);
             return res.json(data);
         } catch(ret) {

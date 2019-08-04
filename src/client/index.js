@@ -158,12 +158,13 @@ function runquery() {
     for (const [filename, file] of Object.entries(filedata)) {
         data[filename] = file.result;
     }
+    const opts = { optimize: $('#opt').prop('checked') };
     destroycircuit();
     $.ajax({
         type: 'POST',
         url: '/api/yosys2digitaljs',
         contentType: "application/json",
-        data: JSON.stringify(data),
+        data: JSON.stringify({ files: data, options: opts }),
         dataType: 'json',
         success: (responseData, status, xhr) => {
             mkcircuit(responseData.output);
