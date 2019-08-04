@@ -50,6 +50,7 @@ form {
     box-sizing: border-box;
     grid-column-start: 1;
     grid-column-end: 4;
+    position: relative;
 }
 
 #gutter_vert {
@@ -63,7 +64,7 @@ form {
 }
 
 #toolbar > div {
-    position: relative;
+    position: absolute;
     top: 50%;
     transform: translateY(-50%);
 }
