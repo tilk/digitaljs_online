@@ -9,7 +9,7 @@ import 'codemirror/lib/codemirror.css';
 import CodeMirror from 'codemirror/lib/codemirror';
 import $ from 'jquery';
 import * as digitaljs from 'digitaljs';
-import Split from 'split.js';
+import Split from 'split-grid';
 import { saveAs } from 'file-saver';
 
 const examples = [
@@ -28,16 +28,20 @@ const examples = [
 
 $(window).on('load', () => {
 
-Split(['#editor', '#paper'], {
-    sizes: [50, 50],
-    minSize: 200
+Split({
+    columnGutters: [{
+        element: document.querySelector('#gutter_horiz'),
+        track: 1
+    }],
+    rowGutters: [{
+        element: document.querySelector('#gutter_vert'),
+        track: 2
+    }],
+    columnMinSize: '100px',
+    columnSnapOffset: 0
 });
 
-const vsplit = Split(['#cont', '#monitorbox'], {
-    sizes: [100, 0],
-    minSize: 0,
-    direction: 'vertical'
-});
+console.log('wuuut');
 
 const editor = CodeMirror.fromTextArea(document.getElementById("code"), {
     lineNumbers: true,
@@ -128,7 +132,13 @@ function mkcircuit(data) {
         });
     monitorview.on('change:live', (live) => { $('#monitorbox button[name=live]').toggleClass('active', live) });
     monitor.on('add', () => {
-        if (vsplit.getSizes()[1] == 0) vsplit.setSizes([75, 25]);
+        if ($('#monitorbox').height() == 0)
+            $('body').css('grid-template-rows', (idx, old) => {
+                const z = old.split(' ');
+                z[1] = '3fr';
+                z[3] = '1fr';
+                return z.join(' ');
+            });
     });
     const show_range = () => {
         $('#monitorbox input[name=rangel]').val(Math.round(monitorview.start));
