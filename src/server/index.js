@@ -18,7 +18,11 @@ Promise.resolve((async () => {
             yosys2digitaljs.io_ui(data.output);
             return res.json(data);
         } catch(ret) {
-            return res.status(500).json({error: 'Yosys failed', messages: ret});
+            return res.status(500).json({
+                error: ret.message,
+                yosys_stdout: ret.yosys_stdout,
+                yosys_stderr: ret.yosys_stderr
+            });
         }
     });
 
