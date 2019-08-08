@@ -139,7 +139,7 @@ function mkcircuit(data) {
     monitorview.on('change:live', (live) => { $('#monitorbox button[name=live]').toggleClass('active', live) });
     monitor.on('add', () => {
         if ($('#monitorbox').height() == 0)
-            $('body').css('grid-template-rows', (idx, old) => {
+            $('html > body > div').css('grid-template-rows', (idx, old) => {
                 const z = old.split(' ');
                 z[1] = '3fr';
                 z[3] = '1fr';
