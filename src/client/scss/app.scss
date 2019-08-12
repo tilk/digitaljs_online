@@ -111,6 +111,10 @@ div#monitorbox > div.btn-toolbar {
     }
 }
 
+.symbola {
+    font-family: "Symbola", $font-family-sans-serif;
+}
+
 #monitor > table button {
     @extend .btn;
     @extend .btn-sm;

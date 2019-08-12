@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" media="screen" href="https://fontlibrary.org/face/symbola" type="text/css"/>
 <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
 <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
@@ -20,19 +21,20 @@
 <div class="mr-2">
 <div class="digitaljs_logo" title="DigitalJS"></div>
 </div>
-<div class="btn-group mr-2" role="group" aria-label="Time control">
+<div class="symbola btn-group mr-2" role="group" aria-label="Time control">
 <button name="pause" type="button" class="btn btn-secondary" title="Pause simulation" disabled="true">⏸</button>
 <button name="resume" type="button" class="btn btn-secondary" title="Resume simulation" disabled="true">▶</button>
+<button name="fastfw" type="button" class="btn btn-secondary" title="Fast-forward simulation" disabled="true">⏩</button>
 <button name="single" type="button" class="btn btn-secondary" title="Run single time step" disabled="true">→</button>
 <button name="next" type="button" class="btn btn-secondary" title="Run until next event" disabled="true">⇥</button>
 </div>
 <div class="input-group mr-2">
 <div class="input-group-prepend">
-<span class="input-group-text" title="Current tick">⏱</span>
+<span class="symbola input-group-text" title="Current tick">⏱</span>
 </div>
 <input type="text" class="form-control" disabled="disabled" id="tick" />
 </div>
-<div class="btn-group mr-2" role="group" aria-label="Saving and sharing">
+<div class="symbola btn-group mr-2" role="group" aria-label="Saving and sharing">
 <button name="load" type="button" class="btn btn-secondary" title="Load from file" disabled="true">📁</button>
 <button name="save" type="button" class="btn btn-secondary" title="Save to file" disabled="true">💾</button>
 <button name="link" type="button" class="btn btn-secondary" title="Get link" disabled="true">🔗</button>
@@ -86,7 +88,7 @@ endmodule
 <div id="gutter_vert" class="gutter gutter-vertical"></div>
 <div id="monitorbox">
 <div class="btn-toolbar" role="toolbar" aria-label="Toolbar">
-<div class="btn-group mr-2" role="group" aria-label="Scale control">
+<div class="symbola btn-group mr-2" role="group" aria-label="Scale control">
 <button name="ppt_up" type="button" class="btn btn-secondary" title="Increase pixels per tick" disabled="true">+</button>
 <button name="ppt_down" type="button" class="btn btn-secondary" title="Decrease pixels per tick" disabled="true">-</button>
 </div>
@@ -96,7 +98,7 @@ endmodule
 </div>
 <input type="text" class="form-control" disabled="disabled" name="scale" />
 </div>
-<div class="btn-group mr-2" role="group" aria-label="Time control">
+<div class="symbola btn-group mr-2" role="group" aria-label="Time control">
 <button name="live" type="button" class="btn btn-secondary" title="Live mode" disabled="true">▶</button>
 <button name="left" type="button" class="btn btn-secondary" title="Move left" disabled="true">←</button>
 <button name="right" type="button" class="btn btn-secondary" title="Move right" disabled="true">→</button>

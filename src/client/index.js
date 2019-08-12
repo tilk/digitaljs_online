@@ -73,6 +73,7 @@ function updatebuttons() {
     $('#toolbar').find('button[name=resume]').prop('disabled', running);
     $('#toolbar').find('button[name=single]').prop('disabled', running);
     $('#toolbar').find('button[name=next]').prop('disabled', running || !circuit.hasPendingEvents);
+    $('#toolbar').find('button[name=fastfw]').prop('disabled', running || !circuit.hasPendingEvents);
     monitorview.autoredraw = !running;
 }
 
@@ -220,7 +221,12 @@ $('button[name=single]').click(e => {
 });
 
 $('button[name=next]').click(e => {
-    while (!circuit.updateGates());
+    circuit.updateGatesNext();
+    updatebuttons();
+});
+
+$('button[name=fastfw]').click(e => {
+    circuit.startFast();
     updatebuttons();
 });
 
