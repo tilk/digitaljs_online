@@ -107,9 +107,6 @@ function mkcircuit(data) {
     loading = false;
     $('form').find('input, textarea, button, select').prop('disabled', false);
     circuit = new digitaljs.Circuit(data);
-    circuit.on('userChange', () => {
-        updatebuttons();
-    });
     circuit.on('postUpdateGates', (tick) => {
         $('#tick').val(tick);
     });
@@ -121,6 +118,12 @@ function mkcircuit(data) {
     }
     monitorview = new digitaljs.MonitorView({model: monitor, el: $('#monitor') });
     paper = circuit.displayOn($('<div>').appendTo($('#paper')));
+    circuit.on('userChange', () => {
+        updatebuttons();
+    });
+    circuit.on('changeRunning', () => {
+        updatebuttons();
+    });
     updatebuttons();
     $('#monitorbox button').prop('disabled', false);
     $('#monitorbox button[name=ppt_up]').on('click', (e) => { monitorview.pixelsPerTick *= 2; });
@@ -207,12 +210,10 @@ $('button[type=submit]').click(e => {
 
 $('button[name=pause]').click(e => {
     circuit.stop();
-    updatebuttons();
 });
 
 $('button[name=resume]').click(e => {
     circuit.start();
-    updatebuttons();
 });
 
 $('button[name=single]').click(e => {

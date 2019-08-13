@@ -129,3 +129,24 @@ div#monitorbox > div.btn-toolbar {
     }
 }
 
+#monitor > table input[name=trigger] {
+    @extend .form-control;
+    @extend .form-control-sm;
+    width: 5em;
+    font-size: 1em;
+    padding: 0em 0.4em;
+};
+
+#monitor > table select {
+    @extend .form-control;
+    @extend .form-control-sm;
+    font-size: 1em;
+    width: auto;
+    padding: 0;
+    &[name=trigger] {
+        width: 5em;
+        text-align: center;
+    }
+}
+
+
