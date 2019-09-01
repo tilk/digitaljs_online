@@ -168,7 +168,7 @@ function runquery() {
     for (const [filename, file] of Object.entries(filedata)) {
         data[filename] = file.result;
     }
-    const opts = { optimize: $('#opt').prop('checked') };
+    const opts = { optimize: $('#opt').prop('checked'), fsm: $('#fsm').val() };
     destroycircuit();
     $.ajax({
         type: 'POST',
