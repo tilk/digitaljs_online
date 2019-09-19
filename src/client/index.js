@@ -22,6 +22,7 @@ const examples = [
     ['cycleadder_arst.sv', 'Accumulating adder'],
     ['prio_encoder.sv', 'Priority encoder'],
     ['lfsr.sv', 'Linear-feedback shift register'],
+    ['fsm.sv', 'Finite state machine'],
     ['rom.sv', 'ROM'],
     ['ram.sv', 'RAM'],
 ];
@@ -168,7 +169,7 @@ function runquery() {
     for (const [filename, file] of Object.entries(filedata)) {
         data[filename] = file.result;
     }
-    const opts = { optimize: $('#opt').prop('checked'), fsm: $('#fsm').val() };
+    const opts = { optimize: $('#opt').prop('checked'), fsm: $('#fsm').val(), fsmexpand: $('#fsmexpand').prop('checked') };
     destroycircuit();
     $.ajax({
         type: 'POST',

@@ -73,17 +73,27 @@ endmodule
 </textarea>
 </div>
 <div class="form-group">
+<button type="submit" class="btn btn-primary">Synthesize and simulate!</button>
+</div>
+<div class="form-group">
 <label for="files">Additional SystemVerilog files:</label>
 <input type="file" class="form-control-file" id="files" multiple="true">
 </div>
+<div class="form-group form-check">
+<input type="checkbox" id="opt" class="form-check-input">
+<label for="opt" class="form-check-label">Optimize</label>
+</div>
 <div class="form-group">
-<button type="submit" class="btn btn-primary">Synthesize and simulate!</button>
-<input type="checkbox" id="opt"> <label for="opt">Optimize</label>
-<select id="fsm">
+<label for="fsm">FSM transform (experimental)</label>
+<select id="fsm" class="form-control">
 <option value="">No FSM transform</option>
 <option value="yes">FSM transform</option>
 <option value="nomap">FSM as circuit element</option>
 </select>
+</div>
+<div class="form-group form-check">
+<input type="checkbox" id="fsmexpand" class="form-check-input">
+<label for="fsmexpand" class="form-check-label">Merge more logic into FSM</label>
 </div>
 </form>
 </div>
