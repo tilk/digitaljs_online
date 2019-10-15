@@ -184,7 +184,7 @@ function runquery() {
             loading = false;
             updatebuttons();
             $('form').find('input, textarea, button, select').prop('disabled', false);
-            $('<div class="alert alert-danger alert-dismissible fade show" role="alert"></div>')
+            $('<div class="query-alert alert alert-danger alert-dismissible fade show" role="alert"></div>')
                 .append('<button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>')
                 .append(document.createTextNode(request.responseJSON.error))
                 .append($("<pre>").text(request.responseJSON.yosys_stderr.trim()))
@@ -196,6 +196,7 @@ function runquery() {
 
 $('button[type=submit]').click(e => {
     e.preventDefault();
+    $('.query-alert').alert('close')
     $('form').find('input, textarea, button, select').prop('disabled', true);
     filedata = {};
     filenum = document.getElementById('files').files.length;
