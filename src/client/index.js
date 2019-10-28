@@ -196,7 +196,7 @@ function runquery() {
 
 $('button[type=submit]').click(e => {
     e.preventDefault();
-    $('.query-alert').alert('close')
+    $('.query-alert').alert('close');
     $('form').find('input, textarea, button, select').prop('disabled', true);
     filedata = {};
     filenum = document.getElementById('files').files.length;
