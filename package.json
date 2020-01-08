@@ -1,6 +1,6 @@
 {
   "name": "digitaljs_online",
-  "version": "0.5.2",
+  "version": "0.5.3",
   "description": "Online demonstration for DigitalJS",
   "main": "src/server/index.js",
   "scripts": {
@@ -28,7 +28,7 @@
     "split-grid": "^1.0.9",
     "sql-template-strings": "^2.2.2",
     "sqlite": "^3.0.3",
-    "yosys2digitaljs": "^0.1.7"
+    "yosys2digitaljs": "^0.1.8"
   },
   "devDependencies": {
     "@babel/core": "^7.5.5",
