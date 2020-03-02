@@ -9,8 +9,8 @@ with a Node backend. You can [see it running here](http://digitaljs.tilk.eu/).
 # TODO
 Some ideas for the online UI.
 
-* Checkbox for turning on optimization, or more fine-tuned optimization settings.
 * Checkbox for reducing high-level primitives (arithmetic, multiplexers, etc.) to individual gates.
 * Support for languages other than SystemVerilog (e.g. Clash, Chisel).
+* Tabs for editing multiple HDL (or other, e.g. memory dump) files simultaneously.
 
 [digitaljs-logo]: docs/resources/digitaljs_textpath_right.svg
