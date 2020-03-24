@@ -34,10 +34,10 @@ module.exports = {
                 loader: "url-loader?limit=100000"
             },
             {
-                test: require.resolve('jquery'),                                
-                use: [{                                                         
-                    loader: 'expose-loader',                                    
-                    options: '$'                                                
+                test: require.resolve('jquery'),
+                use: [{
+                    loader: 'expose-loader',
+                    options: '$'
                 }]
             }
         ]
