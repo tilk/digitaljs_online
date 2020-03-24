@@ -27,6 +27,7 @@
     "popper.js": "^1.15.0",
     "split-grid": "^1.0.9",
     "sql-template-strings": "^2.2.2",
+    "rimraf": "^3.0.2",
     "sqlite": "^3.0.3",
     "yosys2digitaljs": "^0.1.8"
   },

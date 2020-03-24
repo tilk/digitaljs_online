@@ -129,15 +129,15 @@ function mkcircuit(data) {
     $('#monitorbox button').prop('disabled', false);
     $('#monitorbox button[name=ppt_up]').on('click', (e) => { monitorview.pixelsPerTick *= 2; });
     $('#monitorbox button[name=ppt_down]').on('click', (e) => { monitorview.pixelsPerTick /= 2; });
-    $('#monitorbox button[name=left]').on('click', (e) => { 
+    $('#monitorbox button[name=left]').on('click', (e) => {
         monitorview.live = false; monitorview.start -= monitorview.width / monitorview.pixelsPerTick / 4;
     });
-    $('#monitorbox button[name=right]').on('click', (e) => { 
+    $('#monitorbox button[name=right]').on('click', (e) => {
         monitorview.live = false; monitorview.start += monitorview.width / monitorview.pixelsPerTick / 4;
     });
     $('#monitorbox button[name=live]')
         .toggleClass('active', monitorview.live)
-        .on('click', (e) => { 
+        .on('click', (e) => {
             monitorview.live = !monitorview.live;
             if (monitorview.live) monitorview.start = circuit.tick - monitorview.width / monitorview.pixelsPerTick;
         });
@@ -173,7 +173,7 @@ function runquery() {
     destroycircuit();
     $.ajax({
         type: 'POST',
-        url: '/api/yosys2digitaljs',
+        url: '/api/clash/yosys2digitaljs',
         contentType: "application/json",
         data: JSON.stringify({ files: data, options: opts }),
         dataType: 'json',
