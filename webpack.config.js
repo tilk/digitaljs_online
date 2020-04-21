@@ -14,6 +14,11 @@ module.exports = {
     },
     module: {
         rules: [
+            { // workaround for Webpack borkedness
+                test: /\.mjs/,
+                type: "javascript/auto"
+            },
+        /*
             {
                 test: /\.js$/,
                 exclude: /node_modules/,
@@ -21,6 +26,7 @@ module.exports = {
                     loader: "babel-loader"
                 }
             },
+            */
             {
                 test: /\.css$/,
                 use: ["style-loader", "css-loader"]
