@@ -1,6 +1,6 @@
 {
   "name": "digitaljs_online",
-  "version": "0.6.1",
+  "version": "0.6.2",
   "description": "Online demonstration for DigitalJS",
   "main": "src/server/index.js",
   "scripts": {
@@ -19,7 +19,7 @@
     "bootstrap": "^4.4.1",
     "clipboard": "^2.0.6",
     "codemirror": "^5.53.2",
-    "digitaljs": "^0.6.1",
+    "digitaljs": "^0.6.2",
     "express": "^4.17.1",
     "file-saver": "^2.0.1",
     "jquery": "^3.5.0",
