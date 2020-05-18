@@ -1,6 +1,6 @@
 {
   "name": "digitaljs_online",
-  "version": "0.6.3",
+  "version": "0.6.4",
   "description": "Online demonstration for DigitalJS",
   "main": "src/server/index.js",
   "scripts": {
@@ -28,7 +28,7 @@
     "split-grid": "^1.0.9",
     "sql-template-strings": "^2.2.2",
     "sqlite": "^3.0.6",
-    "yosys2digitaljs": "^0.2.0"
+    "yosys2digitaljs": "^0.2.1"
   },
   "devDependencies": {
     "@babel/core": "^7.9.0",
@@ -40,14 +40,14 @@
     "expose-loader": "^0.7.5",
     "file-loader": "^3.0.1",
     "html-webpack-plugin": "^3.2.0",
-    "node-sass": "^4.13.1",
+    "node-sass": "^4.14.1",
     "nodemon": "^1.19.4",
     "sass-loader": "^7.3.1",
     "style-loader": "^0.23.1",
     "url-loader": "^1.1.2",
     "webpack": "^4.42.1",
     "webpack-cli": "^3.3.6",
-    "webpack-dev-server": "^3.10.3"
+    "webpack-dev-server": "^3.11.0"
   },
   "homepage": "https://github.com/tilk/digitaljs_online",
   "repository": {
