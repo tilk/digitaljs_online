@@ -60,9 +60,28 @@ Contributions are welcome!
 This demo was made possible by the 
 <a href="http://www.clifford.at/yosys/">Yosys</a> open-source hardware synthesis framework.
 </p>
-<p>Enter your SystemVerilog code, or load an example by using the dropdown menu,
+<p>Create a new tab and enter your SystemVerilog code, or load an example by using the dropdown menu,
 and press the button to start the simulation.</p>
-<form>
+<div class="form-group">
+<div class="form-inline">
+
+<input type="text" name="newtabname" placeholder="file name" pattern="[a-zA-Z0-9_-]*" defaultValue="input" class="form-control mr-1">
+
+<div class="dropdown">
+  <button class="btn btn-secondary dropdown-toggle mr-1" type="button" id="exten" data-extension="sv" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+    .sv
+  </button>
+  <div class="dropdown-menu" aria-labelledby="excode" id="extens">
+    <a class="dropdown-item" href="#" data-extension="sv">.sv (SystemVerilog, Yosys native)</a>
+    <a class="dropdown-item" href="#" data-extension="v">.v (Verilog, Yosys native)</a>
+    <a class="dropdown-item" href="#" data-extension="vh">.vh (Verilog hex file)</a>
+  </div>
+</div>
+
+<button class="btn btn-primary" type="button" id="newtab">Create file</button>
+</div>
+</div>
+
 <div class="form-group">
 <div class="dropdown">
   <button class="btn btn-secondary dropdown-toggle" type="button" id="excode" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
@@ -72,6 +91,7 @@ and press the button to start the simulation.</p>
   </div>
 </div>
 </div>
+<!--
 <div class="form-group">
 <textarea id="code">
 // Write your modules here!
@@ -79,6 +99,7 @@ module circuit();
 endmodule
 </textarea>
 </div>
+-->
 <div class="form-group">
 <label for="files">Additional SystemVerilog files:</label>
 <input type="file" class="form-control-file" id="files" multiple="true">
@@ -99,7 +120,6 @@ endmodule
 <input type="checkbox" id="fsmexpand" class="form-check-input">
 <label for="fsmexpand" class="form-check-label">Merge more logic into FSM</label>
 </div>
-</form>
 </div>
 </div>
 <div id="synthesize-bar">

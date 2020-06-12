@@ -14,18 +14,18 @@ import Split from 'split-grid';
 import { saveAs } from 'file-saver';
 
 const examples = [
-    ['sr_gate.sv', 'SR latch'],
-    ['sr_neg_gate.sv', 'SR latch (negated inputs)'],
-    ['dlatch_gate.sv', 'D latch'],
-    ['dff_masterslave.sv', 'D flip-flop (master-slave)'],
-    ['fulladder.sv', 'Full adder'],
-    ['serialadder.sv', 'Serial adder'],
-    ['cycleadder_arst.sv', 'Accumulating adder'],
-    ['prio_encoder.sv', 'Priority encoder'],
-    ['lfsr.sv', 'Linear-feedback shift register'],
-    ['fsm.sv', 'Finite state machine'],
-    ['rom.sv', 'ROM'],
-    ['ram.sv', 'RAM'],
+    ['sr_gate', 'SR latch'],
+    ['sr_neg_gate', 'SR latch (negated inputs)'],
+    ['dlatch_gate', 'D latch'],
+    ['dff_masterslave', 'D flip-flop (master-slave)'],
+    ['fulladder', 'Full adder'],
+    ['serialadder', 'Serial adder'],
+    ['cycleadder_arst', 'Accumulating adder'],
+    ['prio_encoder', 'Priority encoder'],
+    ['lfsr', 'Linear-feedback shift register'],
+    ['fsm', 'Finite state machine'],
+    ['rom', 'ROM'],
+    ['ram', 'RAM'],
 ];
 
 $(window).on('load', () => {
@@ -43,26 +43,82 @@ Split({
     columnSnapOffset: 0
 });
 
-$('#editor > nav a').on('click', function (e) {
-  e.preventDefault()
-  $(this).tab('show')
+$('#editor > nav').on('click', 'a', function (e) {
+    e.preventDefault();
+    $(this).tab('show');
 });
 
-const editor = CodeMirror.fromTextArea(document.getElementById("code"), {
-    lineNumbers: true,
-    mode: {
-        name: 'verilog'
+let cnt = 0;
+let editors = {};
+
+function close_tab (tab_a)
+{
+    var tabContentId = $(tab_a).attr("href");
+    var li_list = $(tab_a).parent();
+    $(tab_a).remove(); //remove li of tab
+    if ($(tabContentId).is(":visible")) {
+        li_list.find("a").eq(0).tab('show'); // Select first tab
     }
+    $(tabContentId).remove(); //remove respective tab content
+    delete editors[tabContentId.substring(1)];
+}
+
+function make_tab(filename, extension, content) {
+    const orig_filename = filename;
+    let fcnt = 0;
+    while ($('#editor > .tab-content > .tab-pane')
+            .filter((_, el) => $(el).data('filename') == filename && $(el).data('extension') == extension).length) {
+        filename = orig_filename + fcnt++;
+    }
+    const name = "file" + cnt++;
+    const tab = $('<a class="nav-item nav-link" role="tab" data-toggle="tab" aria-selected="false">')
+        .attr('href', '#' + name)
+        .attr('aria-controls', name)
+        .text(filename + '.' + extension)
+        .appendTo($('#editor > nav div'));
+    $('<button class="close closeTab" type="button">×</button>')
+        .on('click', function (e) { close_tab(tab); })
+        .appendTo(tab);
+    const panel = $('<div role="tabpanel" class="tab-pane">')
+        .attr('id', name)
+        .data('filename', filename)
+        .data('extension', extension)
+        .appendTo($('#editor > .tab-content'));
+    const ed_div = $('<textarea>').val(content).appendTo(panel);
+    $(tab).tab('show');
+    const editor = CodeMirror.fromTextArea(ed_div[0], {
+        lineNumbers: true,
+        mode: {
+            name: extension == 'v' || extension == 'sv' ? 'verilog' : 'text'
+        }
+    });
+    editors[name] = editor;
+}
+
+$('#newtab').on('click', function (e) {
+    let filename = $('#start input[name=newtabname]').val() || 'unnamed';
+    const extension = $("#exten").data("extension");
+    let initial = "";
+    if (extension == "v" || extension == "sv")
+        initial = "// Write your modules here!\nmodule circuit();\nendmodule";
+    make_tab(filename, extension, initial);
 });
 
 for (const [file, name] of examples) {
     $('<a class="dropdown-item" href="">').text(name).appendTo($('#excodes')).click((e) => {
         e.preventDefault();
-        $.get('/examples/' + file, (data, status) => {
-            editor.setValue(data);
+        $.get('/examples/' + file + '.sv', (data, status) => {
+            make_tab(file, 'sv', data);
         });
     });
 }
+
+$('#exten').parent().on('click', 'a', function (e) {
+    const ext = $(this).data('extension');
+    $('#exten')
+        .text("." + ext)
+        .data("extension", ext);
+});
 
 let loading = false, circuit, paper, monitor, monitorview, monitormem, filedata, filenum;
 
@@ -171,9 +227,21 @@ function mkcircuit(data) {
 }
 
 function runquery() {
-    const data = {'_input.sv': editor.getValue()};
+    const data = {};
+    for (const [name, editor] of Object.entries(editors)) {
+        const panel = $('#'+name);
+        data[panel.data("filename") + "." + panel.data("extension")] = editor.getValue();
+    }
     for (const [filename, file] of Object.entries(filedata)) {
         data[filename] = file.result;
+    }
+    if (Object.keys(data).length == 0) {
+        $('<div class="query-alert alert alert-danger alert-dismissible fade show" role="alert"></div>')
+            .append('<button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>')
+            .append(document.createTextNode("No source files for synthesis."))
+            .prependTo($('#synthesize-bar'))
+            .alert();
+        return;
     }
     const opts = { optimize: $('#opt').prop('checked'), fsm: $('#fsm').val(), fsmexpand: $('#fsmexpand').prop('checked') };
     destroycircuit();

@@ -49,6 +49,10 @@
     > div.tab-content > div {
         padding: 1em;
     }
+
+    nav .nav-item:not(.active) button.closeTab {
+        display: none;
+    }
 }
 
 #synthesize-bar {
