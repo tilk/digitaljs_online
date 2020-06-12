@@ -42,6 +42,13 @@
 </div>
 </div>
 <div id="editor">
+<nav>
+<div class="nav nav-tabs" role="tablist">
+<a href="#start" class="nav-item nav-link active" role="tab" data-toggle="tab" aria-controls="start" aria-selected="true">Setup</a>
+</div>
+</nav>
+<div class="tab-content">
+<div role="tabpanel" class="tab-pane active" id="start">
 <h1 class="text-primary">Yosys2digitaljs Demo</h1>
 <p>This is a demonstration page for the
 <a href="https://github.com/tilk/digitaljs">DigitalJS</a> digital logic simulator and the
@@ -73,9 +80,6 @@ endmodule
 </textarea>
 </div>
 <div class="form-group">
-<button type="submit" class="btn btn-primary">Synthesize and simulate!</button>
-</div>
-<div class="form-group">
 <label for="files">Additional SystemVerilog files:</label>
 <input type="file" class="form-control-file" id="files" multiple="true">
 </div>
@@ -96,6 +100,11 @@ endmodule
 <label for="fsmexpand" class="form-check-label">Merge more logic into FSM</label>
 </div>
 </form>
+</div>
+</div>
+<div id="synthesize-bar">
+<button type="submit" class="btn btn-primary">Synthesize and simulate!</button>
+</div>
 </div>
 <div id="gutter_horiz" class="gutter gutter-horizontal"></div>
 <div id="paper">

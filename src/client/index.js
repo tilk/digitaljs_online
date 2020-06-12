@@ -6,6 +6,7 @@ import ClipboardJS from 'clipboard';
 import './scss/app.scss';
 import 'codemirror/mode/verilog/verilog';
 import 'codemirror/lib/codemirror.css';
+import 'bootstrap/js/src/tab.js';
 import CodeMirror from 'codemirror/lib/codemirror';
 import $ from 'jquery';
 import * as digitaljs from 'digitaljs';
@@ -40,6 +41,11 @@ Split({
     }],
     columnMinSize: '100px',
     columnSnapOffset: 0
+});
+
+$('#editor > nav a').on('click', function (e) {
+  e.preventDefault()
+  $(this).tab('show')
 });
 
 const editor = CodeMirror.fromTextArea(document.getElementById("code"), {
@@ -188,7 +194,7 @@ function runquery() {
                 .append('<button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>')
                 .append(document.createTextNode(request.responseJSON.error))
                 .append($("<pre>").text(request.responseJSON.yosys_stderr.trim()))
-                .appendTo($('#editor'))
+                .prependTo($('#synthesize-bar'))
                 .alert();
         }
     });
@@ -196,7 +202,7 @@ function runquery() {
 
 $('button[type=submit]').click(e => {
     e.preventDefault();
-    $('.query-alert').alert('close');
+    $('#synthesize-bar .query-alert').alert('close');
     $('form').find('input, textarea, button, select').prop('disabled', true);
     filedata = {};
     filenum = document.getElementById('files').files.length;

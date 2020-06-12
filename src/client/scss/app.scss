@@ -31,13 +31,31 @@
     cursor: ns-resize;
 }
 
-#paper, #editor, #monitorbox {
+#paper, #monitorbox {
     box-sizing: border-box;
     overflow: auto;
 }
 
 #editor {
+    box-sizing: border-box;
+    display: grid;
+    overflow: hidden;
+    grid-template-rows: 0fr 1fr 0fr;
+    
+    > div.tab-content {
+        overflow: auto;
+    }
+
+    > div.tab-content > div {
+        padding: 1em;
+    }
+}
+
+#synthesize-bar {
     padding: 1em;
+    > div {
+        margin-top: 1em;
+    }
 }
 
 form {
