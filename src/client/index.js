@@ -120,7 +120,7 @@ $('#exten').parent().on('click', 'a', function (e) {
         .data("extension", ext);
 });
 
-let loading = false, circuit, paper, monitor, monitorview, monitormem, filedata, filenum;
+let loading = false, circuit, paper, monitor, monitorview, monitormem, iopanel, filedata, filenum;
 
 function updatebuttons() {
     if (circuit == undefined) {
@@ -161,6 +161,10 @@ function destroycircuit() {
         monitor.stopListening();
         monitor = undefined;
     }
+    if (iopanel) {
+        iopanel.shutdown();
+        iopanel = undefined;
+    }
     loading = true;
     updatebuttons();
     $('#monitorbox button').prop('disabled', true).off();
@@ -180,6 +184,15 @@ function mkcircuit(data) {
         monitormem = undefined;
     }
     monitorview = new digitaljs.MonitorView({model: monitor, el: $('#monitor') });
+    iopanel = new digitaljs.IOPanelView({
+        model: circuit, el: $('#iopanel'),
+        rowMarkup: '<div class="form-group row"></div>',
+        labelMarkup: '<label class="col-sm-2"></label>',
+        colMarkup: '<div class="col-sm-10 form-inline"></div>',
+        buttonMarkup: '<div class="form-check"><input type="checkbox"></input></div>',
+        lampMarkup: '<div class="form-check"><input type="checkbox"></input></div>',
+        inputMarkup: '<input type="text" class="mr-2">'
+    });
     paper = circuit.displayOn($('<div>').appendTo($('#paper')));
     circuit.on('userChange', () => {
         updatebuttons();
