@@ -41,13 +41,35 @@
     display: grid;
     overflow: hidden;
     grid-template-rows: 0fr 1fr 0fr;
-    
-    > div.tab-content {
-        overflow: auto;
-    }
 
-    > div.tab-content > div {
-        padding: 1em;
+    > div.tab-content {
+        overflow: hidden;
+        display: grid;
+
+        > div {
+            overflow: auto;
+        }
+    
+        > div.tab-withbar {
+            overflow: hidden;
+            &.active {
+                display: grid;
+                grid-template-rows: 0fr 1fr;
+            }
+
+            > div:first-child {
+                @extend .border-bottom;
+                padding: 5px;
+            }
+
+            > div:last-child {
+                overflow: auto;
+            }
+        }
+
+        div.tab-padded:not(:empty) {
+            padding: 1em;
+        }
     }
 
     nav .nav-item:not(.active) button.closeTab {
@@ -62,7 +84,7 @@
     }
 }
 
-form {
+div.tab-content form {
     margin-bottom: 1em;
 }
 

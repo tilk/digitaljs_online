@@ -57,7 +57,7 @@ function handle_luaerror(name, e) {
     $('<div class="query-alert alert alert-danger alert-dismissible fade show" role="alert"></div>')
         .append('<button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>')
         .append($("<pre>").text(e.luaMessage))
-        .appendTo($('#' + name))
+        .appendTo($('#' + name).find("> div:last-child > div:last-child"))
         .alert();
 }
 
@@ -76,7 +76,7 @@ function make_luarunner(name, circuit) {
         $('<div class="query-alert alert alert-info alert-dismissible fade show" role="alert"></div>')
             .append('<button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>')
             .append($("<pre>").text(msgs.join('\t')))
-            .appendTo($('#' + name))
+            .appendTo($('#' + name).find('> div:last-child > div:last-child'))
             .alert();
     });
 }
@@ -119,24 +119,23 @@ function make_tab(filename, extension, content) {
         .appendTo($('#editor > .tab-content'));
     const ed_div = $('<textarea>').val(content).appendTo(panel);
     $(tab).tab('show');
-    const editor = CodeMirror.fromTextArea(ed_div[0], {
-        lineNumbers: true,
-        mode: {
-            name: extension == 'v' || extension == 'sv' ? 'verilog' : 
-                  extension == 'lua' ? 'lua' : 'text'
-        }
-    });
     // Lua scripting support
     if (extension == 'lua') {
+        const panel2 = $('<div>')
+            .appendTo(panel);
+        ed_div.appendTo(panel2);
+        $('<div class="tab-padded"></div>').appendTo(panel2);
+        panel.addClass("tab-withbar");
         // TODO: bar always on top of the tab
         const bar = $(`
-            <div class="btn-toolbar mt-2 mb-2" role="toolbar">
+            <div class="btn-toolbar" role="toolbar">
              <div class="btn-group" role="group">
               <button name="luarun" type="button" class="btn btn-secondary" disabled>Run</button>
               <button name="luastop" type="button" class="btn btn-secondary" disabled>Stop</button>
              </div>
+             <a class="nav-link" href="https://tilk.github.io/digitaljs_lua/USAGE" target="_blank">API reference</a>
             </div>`)
-            .appendTo(panel);
+            .prependTo(panel);
         if (circuit) {
             bar.find('button[name=luarun]').prop('disabled', false);
             make_luarunner(name, circuit);
@@ -164,6 +163,13 @@ function make_tab(filename, extension, content) {
                 helpers[name].stopThread(pid);
         });
     }
+    const editor = CodeMirror.fromTextArea(ed_div[0], {
+        lineNumbers: true,
+        mode: {
+            name: extension == 'v' || extension == 'sv' ? 'verilog' : 
+                  extension == 'lua' ? 'lua' : 'text'
+        }
+    });
     editors[name] = editor;
 }
 
