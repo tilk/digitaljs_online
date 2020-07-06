@@ -1,8 +1,0 @@
-before_install:
-  - sudo add-apt-repository ppa:saltmakrell/ppa -y
-  - sudo apt-get update
-  - sudo apt-get install -y yosys
-
-language: node_js
-node_js:
-    - "8"
