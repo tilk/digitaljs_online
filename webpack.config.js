@@ -16,7 +16,13 @@ module.exports = {
         rules: [
             { // workaround for Webpack borkedness
                 test: /\.mjs/,
-                type: "javascript/auto"
+                type: "javascript/auto",
+                use: {
+                    loader: "babel-loader",
+                    options: {
+                        plugins: ["@babel/plugin-proposal-class-properties"]
+                    }
+                }
             },
         /*
             {

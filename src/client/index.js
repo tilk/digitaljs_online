@@ -5,11 +5,13 @@ import 'bootstrap';
 import ClipboardJS from 'clipboard';
 import './scss/app.scss';
 import 'codemirror/mode/verilog/verilog';
+import 'codemirror/mode/lua/lua';
 import 'codemirror/lib/codemirror.css';
 import 'bootstrap/js/src/tab.js';
 import CodeMirror from 'codemirror/lib/codemirror';
 import $ from 'jquery';
 import * as digitaljs from 'digitaljs';
+import * as digitaljs_lua from 'digitaljs_lua';
 import Split from 'split-grid';
 import { saveAs } from 'file-saver';
 
@@ -49,7 +51,35 @@ $('#editor > nav').on('click', 'a', function (e) {
 });
 
 let cnt = 0;
-let editors = {};
+let editors = {}, helpers = {};
+
+function handle_luaerror(name, e) {
+    $('<div class="query-alert alert alert-danger alert-dismissible fade show" role="alert"></div>')
+        .append('<button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>')
+        .append($("<pre>").text(e.luaMessage))
+        .appendTo($('#' + name))
+        .alert();
+}
+
+function make_luarunner(name, circuit) {
+    helpers[name] = new digitaljs_lua.LuaRunner(circuit); 
+    helpers[name].on('thread:stop', (pid) => {
+        const panel = $('#' + name);
+        panel.find('textarea').prop('disabled', false);
+        panel.find('button[name=luarun]').prop('disabled', false);
+        panel.find('button[name=luastop]').prop('disabled', true);
+    });
+    helpers[name].on('thread:error', (pid, e) => {
+        handle_luaerror(name, e);
+    });
+    helpers[name].on('print', msgs => {
+        $('<div class="query-alert alert alert-info alert-dismissible fade show" role="alert"></div>')
+            .append('<button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>')
+            .append($("<pre>").text(msgs.join('\t')))
+            .appendTo($('#' + name))
+            .alert();
+    });
+}
 
 function close_tab (tab_a)
 {
@@ -60,7 +90,10 @@ function close_tab (tab_a)
         li_list.find("a").eq(0).tab('show'); // Select first tab
     }
     $(tabContentId).remove(); //remove respective tab content
-    delete editors[tabContentId.substring(1)];
+    const name = tabContentId.substring(1);
+    delete editors[name];
+    if (helpers[name]) helpers[name].shutdown();
+    delete helpers[name];
 }
 
 function make_tab(filename, extension, content) {
@@ -81,17 +114,56 @@ function make_tab(filename, extension, content) {
         .appendTo(tab);
     const panel = $('<div role="tabpanel" class="tab-pane">')
         .attr('id', name)
-        .data('filename', filename)
-        .data('extension', extension)
+        .attr('data-filename', filename)
+        .attr('data-extension', extension)
         .appendTo($('#editor > .tab-content'));
     const ed_div = $('<textarea>').val(content).appendTo(panel);
     $(tab).tab('show');
     const editor = CodeMirror.fromTextArea(ed_div[0], {
         lineNumbers: true,
         mode: {
-            name: extension == 'v' || extension == 'sv' ? 'verilog' : 'text'
+            name: extension == 'v' || extension == 'sv' ? 'verilog' : 
+                  extension == 'lua' ? 'lua' : 'text'
         }
     });
+    // Lua scripting support
+    if (extension == 'lua') {
+        // TODO: bar always on top of the tab
+        const bar = $(`
+            <div class="btn-toolbar mt-2 mb-2" role="toolbar">
+             <div class="btn-group" role="group">
+              <button name="luarun" type="button" class="btn btn-secondary" disabled>Run</button>
+              <button name="luastop" type="button" class="btn btn-secondary" disabled>Stop</button>
+             </div>
+            </div>`)
+            .appendTo(panel);
+        if (circuit) {
+            bar.find('button[name=luarun]').prop('disabled', false);
+            make_luarunner(name, circuit);
+        }
+        bar.find('button[name=luarun]').on('click', () => {
+            panel.find(".query-alert").removeClass('fade').alert('close');
+            let pid;
+            try {
+                pid = helpers[name].runThread(editors[name].getValue());
+            } catch (e) {
+                if (e instanceof digitaljs_lua.LuaError)
+                    handle_luaerror(name, e);
+                else throw e;
+            }
+            if (pid !== undefined) {
+                bar.data('pid', pid);
+                panel.find('textarea').prop('disabled', true);
+                bar.find('button[name=luarun]').prop('disabled', true);
+                bar.find('button[name=luastop]').prop('disabled', false);
+            }
+        });
+        bar.find('button[name=luastop]').on('click', () => {
+            const pid = bar.data('pid');
+            if (helpers[name].isThreadRunning(pid))
+                helpers[name].stopThread(pid);
+        });
+    }
     editors[name] = editor;
 }
 
@@ -165,6 +237,11 @@ function destroycircuit() {
         iopanel.shutdown();
         iopanel = undefined;
     }
+    for (const h of Object.values(helpers)) {
+        h.shutdown();
+    }
+    $('#editor > .tab-content > div[data-extension=lua] button').prop('disabled', true);
+    helpers = {};
     loading = true;
     updatebuttons();
     $('#monitorbox button').prop('disabled', true).off();
@@ -194,6 +271,10 @@ function mkcircuit(data) {
         inputMarkup: '<input type="text" class="mr-2">'
     });
     paper = circuit.displayOn($('<div>').appendTo($('#paper')));
+    for (const name of Object.keys(editors)) {
+        if ($('#' + name).data('extension') == 'lua') 
+            make_luarunner(name, circuit);
+    }
     circuit.on('userChange', () => {
         updatebuttons();
     });
@@ -201,6 +282,7 @@ function mkcircuit(data) {
         updatebuttons();
     });
     updatebuttons();
+    $('#editor > .tab-content > div[data-extension=lua] button[name=luarun]').prop('disabled', false);
     $('#monitorbox button').prop('disabled', false);
     $('#monitorbox button[name=ppt_up]').on('click', (e) => { monitorview.pixelsPerTick *= 2; });
     $('#monitorbox button[name=ppt_down]').on('click', (e) => { monitorview.pixelsPerTick /= 2; });
@@ -283,7 +365,7 @@ function runquery() {
 
 $('button[type=submit]').click(e => {
     e.preventDefault();
-    $('#synthesize-bar .query-alert').alert('close');
+    $('#synthesize-bar .query-alert').removeClass('fade').alert('close');
     $('form').find('input, textarea, button, select').prop('disabled', true);
     filedata = {};
     filenum = document.getElementById('files').files.length;

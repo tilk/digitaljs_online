@@ -11,7 +11,7 @@
 <link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5">
 <meta name="msapplication-TileColor" content="#da532c">
 <meta name="theme-color" content="#ffffff">
-<title>Yosys2digitaljs demo</title>
+<title>DigitalJS Online</title>
 </head>
 <body>
 <input type="file" style="display:none" id="input_load" />
@@ -50,8 +50,8 @@
 </nav>
 <div class="tab-content">
 <div role="tabpanel" class="tab-pane active" id="start">
-<h1 class="text-primary">Yosys2digitaljs Demo</h1>
-<p>This is a demonstration page for the
+<h1 class="text-primary">DigitalJS Online</h1>
+<p>This is a demonstration app for the
 <a href="https://github.com/tilk/digitaljs">DigitalJS</a> digital logic simulator and the
 <a href="https://github.com/tilk/yosys2digitaljs">yosys2digitaljs</a> netlist format converter,
 by <a href="http://www.tilk.eu/">Marek Materzok</a>,
@@ -76,6 +76,7 @@ and press the button to start the simulation.</p>
     <a class="dropdown-item" href="#" data-extension="sv">.sv (SystemVerilog, Yosys native)</a>
     <a class="dropdown-item" href="#" data-extension="v">.v (Verilog, Yosys native)</a>
     <a class="dropdown-item" href="#" data-extension="vh">.vh (Verilog hex file)</a>
+    <a class="dropdown-item" href="#" data-extension="lua">.lua (Lua script)</a>
   </div>
 </div>
 
@@ -92,15 +93,7 @@ and press the button to start the simulation.</p>
   </div>
 </div>
 </div>
-<!--
-<div class="form-group">
-<textarea id="code">
-// Write your modules here!
-module circuit();
-endmodule
-</textarea>
-</div>
--->
+<form>
 <div class="form-group">
 <label for="files">Additional SystemVerilog files:</label>
 <input type="file" class="form-control-file" id="files" multiple="true">
@@ -121,12 +114,15 @@ endmodule
 <input type="checkbox" id="fsmexpand" class="form-check-input">
 <label for="fsmexpand" class="form-check-label">Merge more logic into FSM</label>
 </div>
+</form>
 </div>
 <div role="tabpanel" class="tab-pane" id="iopanel">
 </div>
 </div>
 <div id="synthesize-bar">
+<form>
 <button type="submit" class="btn btn-primary">Synthesize and simulate!</button>
+</form>
 </div>
 </div>
 <div id="gutter_horiz" class="gutter gutter-horizontal"></div>
