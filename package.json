@@ -19,7 +19,7 @@
     "bootstrap": "^4.5.0",
     "clipboard": "^2.0.6",
     "codemirror": "^5.54.0",
-    "digitaljs": "^0.6.4",
+    "digitaljs": "^0.6.5",
     "digitaljs_lua": "^0.0.1",
     "express": "^4.17.1",
     "file-saver": "^2.0.1",
