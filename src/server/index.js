@@ -1,21 +1,21 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const app = express();
-const yosys2digitaljs = require('yosys2digitaljs');
+const digital_babel = require('digital_babel');
 const sqlite = require('sqlite');
 const SQL = require('sql-template-strings');
 const sha256 = require('js-sha256');
 
 Promise.resolve((async () => {
     const db = await sqlite.open('./database.sqlite', { Promise });
+    const converter = new digital_babel.DigitalBabel({});
     await db.migrate(); // ({ force: 'last' });
 
     app.use(bodyParser.json({limit: '50mb'}));
 
     app.post('/api/yosys2digitaljs', async (req, res) => {
         try {
-            const data = await yosys2digitaljs.process_files(req.body.files, req.body.options);
-            yosys2digitaljs.io_ui(data.output);
+            const data = await converter.convertWithOpts(req.body.files, req.body.options);
             return res.json(data);
         } catch(ret) {
             return res.status(500).json({
