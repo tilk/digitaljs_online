@@ -1,6 +1,6 @@
 {
   "name": "digitaljs_online",
-  "version": "0.6.7",
+  "version": "0.7.0",
   "description": "Online demonstration for DigitalJS",
   "main": "src/server/index.js",
   "scripts": {
