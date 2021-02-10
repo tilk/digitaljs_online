@@ -270,8 +270,8 @@ function mkcircuit(data) {
     iopanel = new digitaljs.IOPanelView({
         model: circuit, el: $('#iopanel'),
         rowMarkup: '<div class="form-group row"></div>',
-        labelMarkup: '<label class="col-sm-2"></label>',
-        colMarkup: '<div class="col-sm-10 form-inline"></div>',
+        labelMarkup: '<label class="col-sm-4 control-label"></label>',
+        colMarkup: '<div class="col-sm-8 form-inline"></div>',
         buttonMarkup: '<div class="form-check"><input type="checkbox"></input></div>',
         lampMarkup: '<div class="form-check"><input type="checkbox"></input></div>',
         inputMarkup: '<input type="text" class="mr-2">'
