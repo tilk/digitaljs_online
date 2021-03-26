@@ -193,4 +193,14 @@ div#monitorbox > div.btn-toolbar {
     }
 }
 
+#dropzone {
+    @extend .mb-3;
+    @extend .p-3;
+    @extend .border-secondary;
+    @extend .rounded;
+    border: 2px solid;
+    &.dragover {
+        border-style: dashed;
+    }
+}
 

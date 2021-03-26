@@ -2,6 +2,7 @@
 
 import 'popper.js';
 import 'bootstrap';
+import Droppable from 'droppable';
 import ClipboardJS from 'clipboard';
 import './scss/app.scss';
 import 'codemirror/mode/verilog/verilog';
@@ -196,6 +197,23 @@ $('#exten').parent().on('click', 'a', function (e) {
     $('#exten')
         .text("." + ext)
         .data("extension", ext);
+});
+
+const droppable = new Droppable({
+    element: document.querySelector('#dropzone')
+});
+
+droppable.onFilesDropped((files) => {
+    for (const file of files) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const file_parts = file.name.split(".");
+            const filename = file_parts.slice(0, -1).join(".");
+            const extension = file_parts.slice(-1)[0];
+            make_tab(filename, extension, reader.result);
+        };
+        reader.readAsText(file);
+    }
 });
 
 let loading = false, circuit, paper, monitor, monitorview, monitormem, iopanel, filedata, filenum;

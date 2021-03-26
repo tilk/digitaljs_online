@@ -21,6 +21,7 @@
     "codemirror": "^5.59.2",
     "digitaljs": "^0.7.3",
     "digitaljs_lua": "^0.0.3",
+    "droppable": "^2.2.0",
     "express": "^4.17.1",
     "file-saver": "^2.0.5",
     "jquery": "^3.5.1",
