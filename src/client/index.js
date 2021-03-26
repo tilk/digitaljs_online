@@ -82,6 +82,14 @@ function make_luarunner(name, circuit) {
     });
 }
 
+function download_tab (tab_a, filename, extension)
+{
+    var tabContentId = $(tab_a).attr("href");
+    const name = tabContentId.substring(1);
+    const blob = new Blob([editors[name].getValue()], {type: "text/plain;charset=utf-8"});
+    saveAs(blob, filename + "." + extension);
+}
+
 function close_tab (tab_a)
 {
     var tabContentId = $(tab_a).attr("href");
@@ -112,6 +120,9 @@ function make_tab(filename, extension, content) {
         .appendTo($('#editor > nav div'));
     $('<button class="close closeTab" type="button">×</button>')
         .on('click', function (e) { close_tab(tab); })
+        .appendTo(tab);
+    $('<button class="close closeTab" type="button">📥</button>')
+        .on('click', function (e) { download_tab(tab, filename, extension); })
         .appendTo(tab);
     const panel = $('<div role="tabpanel" class="tab-pane">')
         .attr('id', name)

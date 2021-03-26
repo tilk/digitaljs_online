@@ -72,6 +72,11 @@
         }
     }
 
+    nav .nav-item button.closeTab {
+        @extend .ml-1;
+        @extend .symbola;
+    }
+
     nav .nav-item:not(.active) button.closeTab {
         display: none;
     }
