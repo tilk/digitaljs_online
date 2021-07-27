@@ -282,10 +282,10 @@ function destroycircuit() {
     $('#monitorbox button').prop('disabled', true).off();
 }
 
-function mkcircuit(data) {
+function mkcircuit(data, opts) {
     loading = false;
     $('form').find('input, textarea, button, select').prop('disabled', false);
-    circuit = new digitaljs.Circuit(data);
+    circuit = new digitaljs.Circuit(data, opts);
     circuit.on('postUpdateGates', (tick) => {
         $('#tick').val(tick);
     });
@@ -373,7 +373,13 @@ function runquery() {
             .alert();
         return;
     }
-    const opts = { optimize: $('#opt').prop('checked'), fsm: $('#fsm').val(), fsmexpand: $('#fsmexpand').prop('checked') };
+    const opts = {
+        optimize: $('#opt').prop('checked'),
+        fsm: $('#fsm').val(),
+        fsmexpand: $('#fsmexpand').prop('checked')
+    };
+    const transform = $('#transform').prop('checked');
+    const layoutEngine = $('#layout').val();
     destroycircuit();
     $.ajax({
         type: 'POST',
@@ -382,7 +388,9 @@ function runquery() {
         data: JSON.stringify({ files: data, options: opts }),
         dataType: 'json',
         success: (responseData, status, xhr) => {
-            mkcircuit(responseData.output);
+            let circuit = responseData.output;
+            if (transform) circuit = digitaljs.transform.transformCircuit(circuit);
+            mkcircuit(circuit, {layoutEngine: layoutEngine});
         },
         error: (request, status, error) => {
             loading = false;

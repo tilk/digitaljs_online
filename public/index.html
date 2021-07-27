@@ -102,7 +102,18 @@ and press the button to start the simulation.</p>
 </div>
 <div class="form-group form-check">
 <input type="checkbox" id="opt" class="form-check-input">
-<label for="opt" class="form-check-label">Optimize</label>
+<label for="opt" class="form-check-label">Optimize in Yosys</label>
+</div>
+<div class="form-group form-check">
+<input type="checkbox" id="transform" class="form-check-input" checked>
+<label for="transform" class="form-check-label">Simplify diagram</label>
+</div>
+<div class="form-group">
+<label for="layout">Layout engine</label>
+<select id="layout" class="form-control">
+<option value="elkjs">ElkJS (more readable)</option>
+<option value="dagre">Dagre (legacy)</option>
+</select>
 </div>
 <div class="form-group">
 <label for="fsm">FSM transform (experimental)</label>
