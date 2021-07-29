@@ -60,9 +60,11 @@ module.exports = {
             inject: 'head'
 //            favicon: "./public/favicon.ico"
         }),
-        new CopyWebpackPlugin([
-                { from: 'public/*.+(ico|png|svg|webmanifest)', to: '', flatten: true },
-                { from: 'node_modules/yosys2digitaljs/tests/*.sv', to: 'examples', flatten: true }
-        ])
+        new CopyWebpackPlugin({
+            patterns: [
+                { from: 'public/*.+(ico|png|svg|webmanifest)', to: '[name][ext]' },
+                { from: 'node_modules/yosys2digitaljs/tests/*.sv', to: 'examples/[name][ext]' }
+            ]
+        })
     ]
 };
