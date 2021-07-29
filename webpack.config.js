@@ -14,25 +14,17 @@ module.exports = {
     },
     module: {
         rules: [
-            { // workaround for Webpack borkedness
+            {
                 test: /\.mjs/,
-                type: "javascript/auto",
                 use: {
                     loader: "babel-loader",
                     options: {
-                        plugins: ["@babel/plugin-proposal-class-properties"]
+                        plugins: [
+                            "@babel/plugin-proposal-class-properties"
+                        ]
                     }
                 }
             },
-        /*
-            {
-                test: /\.js$/,
-                exclude: /node_modules/,
-                use: {
-                    loader: "babel-loader"
-                }
-            },
-            */
             {
                 test: /\.css$/,
                 use: ["style-loader", "css-loader"]
@@ -43,14 +35,14 @@ module.exports = {
             },
             {
                 test: /\.(png|woff|woff2|eot|ttf|svg)$/,
-                loader: "url-loader?limit=100000"
+                type: 'asset'
             },
             {
-                test: require.resolve('jquery'),                                
-                use: [{                                                         
-                    loader: 'expose-loader',                                    
-                    options: '$'                                                
-                }]
+                test: require.resolve('jquery'),
+                loader: 'expose-loader',
+                options: {
+                    exposes: ['$']
+                }
             }
         ]
     },
