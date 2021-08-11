@@ -243,7 +243,7 @@ function updatebuttons() {
     $('#toolbar').find('button[name=resume]').prop('disabled', running);
     $('#toolbar').find('button[name=single]').prop('disabled', running);
     $('#toolbar').find('button[name=next]').prop('disabled', running || !circuit.hasPendingEvents);
-    $('#toolbar').find('button[name=fastfw]').prop('disabled', running || !circuit.hasPendingEvents);
+    $('#toolbar').find('button[name=fastfw]').prop('disabled', running);
     monitorview.autoredraw = !running;
 }
 
@@ -380,6 +380,7 @@ function runquery() {
     };
     const transform = $('#transform').prop('checked');
     const layoutEngine = $('#layout').val();
+    const simEngine = $('#engine').val();
     destroycircuit();
     $.ajax({
         type: 'POST',
@@ -390,7 +391,8 @@ function runquery() {
         success: (responseData, status, xhr) => {
             let circuit = responseData.output;
             if (transform) circuit = digitaljs.transform.transformCircuit(circuit);
-            mkcircuit(circuit, {layoutEngine: layoutEngine});
+            const engines = { synch: digitaljs.engines.BrowserSynchEngine, worker: digitaljs.engines.WorkerEngine };
+            mkcircuit(circuit, {layoutEngine: layoutEngine, engine: engines[simEngine]});
         },
         error: (request, status, error) => {
             loading = false;

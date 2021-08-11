@@ -116,6 +116,13 @@ and press the button to start the simulation.</p>
 </select>
 </div>
 <div class="form-group">
+<label for="engine">Simulation engine</label>
+<select id="engine" class="form-control">
+<option value="worker">WebWorker (faster and responsive)</option>
+<option value="synch">Synchronous (extensible but slow)</option>
+</select>
+</div>
+<div class="form-group">
 <label for="fsm">FSM transform (experimental)</label>
 <select id="fsm" class="form-control">
 <option value="">No FSM transform</option>
