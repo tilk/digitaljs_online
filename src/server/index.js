@@ -3,11 +3,12 @@ const bodyParser = require('body-parser');
 const app = express();
 const yosys2digitaljs = require('yosys2digitaljs');
 const sqlite = require('sqlite');
+const sqlite3 = require('sqlite3');
 const SQL = require('sql-template-strings');
 const sha256 = require('js-sha256');
 
 Promise.resolve((async () => {
-    const db = await sqlite.open('./database.sqlite', { Promise });
+    const db = await sqlite.open({filename: './database.sqlite', driver: sqlite3.Database});
     await db.migrate(); // ({ force: 'last' });
 
     app.use(bodyParser.json({limit: '50mb'}));
