@@ -527,5 +527,7 @@ if (window.location.hash.slice(1))
 
 new ClipboardJS('button.clipboard');
 
+$('[data-bs-toggle="tooltip"]').tooltip();
+
 });
 
