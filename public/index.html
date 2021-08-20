@@ -108,6 +108,10 @@ and press the Synthesize button to start the simulation.</p>
 <input type="checkbox" id="transform" class="form-check-input" checked>
 <label for="transform" class="form-check-label">Simplify diagram</label>
 </div>
+<div class="form-group form-check" data-bs-toggle="tooltip" title="Enables checking for common problems using the Verilator compiler.">
+<input type="checkbox" id="lint" class="form-check-input" checked>
+<label for="lint" class="form-check-label">Lint source code using <a href="https://verilator.org/">Verilator</a></label>
+</div>
 <div class="form-group" data-bs-toggle="tooltip" title="Changes how the circuit elements are automatically positioned after synthesis.">
 <label for="layout">Layout engine</label>
 <select id="layout" class="form-control">

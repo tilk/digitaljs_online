@@ -8,6 +8,7 @@ import './scss/app.scss';
 import 'codemirror/mode/verilog/verilog';
 import 'codemirror/mode/lua/lua';
 import 'codemirror/lib/codemirror.css';
+import 'codemirror/addon/lint/lint.css';
 import 'bootstrap/js/src/tab.js';
 import CodeMirror from 'codemirror/lib/codemirror';
 import $ from 'jquery';
@@ -105,6 +106,12 @@ function close_tab (tab_a)
     delete helpers[name];
 }
 
+function find_filename(name) {
+    const list = $('#editor > .tab-content > .tab-pane').filter((_, el) => $(el).data('fullname') == name);
+    if (list.length == 0) return;
+    return list[0].id;
+}
+
 function make_tab(filename, extension, content) {
     const orig_filename = filename;
     let fcnt = 0;
@@ -128,6 +135,7 @@ function make_tab(filename, extension, content) {
         .attr('id', name)
         .attr('data-filename', filename)
         .attr('data-extension', extension)
+        .attr('data-fullname', filename + '.' + extension)
         .appendTo($('#editor > .tab-content'));
     const ed_div = $('<textarea>').val(content).appendTo(panel);
     $(tab).tab('show');
@@ -180,7 +188,8 @@ function make_tab(filename, extension, content) {
         mode: {
             name: extension == 'v' || extension == 'sv' ? 'verilog' : 
                   extension == 'lua' ? 'lua' : 'text'
-        }
+        },
+        gutters: ['CodeMirror-lint-markers']
     });
     editors[name] = editor;
 }
@@ -356,6 +365,46 @@ function mkcircuit(data, opts) {
     monitorview.on('change:pixelsPerTick', show_scale);
 }
 
+function makeLintMarker(cm, labels, severity, multiple) {
+    let marker = document.createElement("div"), inner = marker;
+    marker.className = "CodeMirror-lint-marker CodeMirror-lint-marker-" + severity;
+    if (multiple) {
+        inner = marker.appendChild(document.createElement("div"));
+        inner.className = "CodeMirror-lint-marker CodeMirror-lint-marker-multiple";
+    }
+    let text = labels.join("\n");
+    $(inner).tooltip({
+        title: text
+    });
+
+    return marker;
+}
+
+function updateLint(lint) {
+    for (const [name, editor] of Object.entries(editors)) {
+        editor.clearGutter('CodeMirror-lint-markers');
+    }
+    if (!lint || lint.length == 0) return;
+    const data = {};
+    for (const lintInfo of lint) {
+        if (!(lintInfo.file in data))
+            data[lintInfo.file] = {};
+        if (!(lintInfo.line in data[lintInfo.file]))
+            data[lintInfo.file][lintInfo.line] = {messages: [], maxSeverity: lintInfo.type.toLowerCase()};
+        data[lintInfo.file][lintInfo.line].messages.push(lintInfo.message);
+        if (lintInfo.type == "Error")
+            data[lintInfo.file][lintInfo.line].maxSeverity = lintInfo.type.toLowerCase();
+    }
+    for (const [name, lines] of Object.entries(data)) {
+        const editor = editors[find_filename(name)];
+        if (!editor) continue;
+        for (const [line, {messages, maxSeverity}] of Object.entries(lines)) {
+            editor.setGutterMarker(Number(line-1), 'CodeMirror-lint-markers',
+                makeLintMarker(editor, messages, maxSeverity, messages.length > 1));
+        }
+    }
+}
+
 function runquery() {
     const data = {};
     for (const [name, editor] of Object.entries(editors)) {
@@ -376,7 +425,8 @@ function runquery() {
     const opts = {
         optimize: $('#opt').prop('checked'),
         fsm: $('#fsm').val(),
-        fsmexpand: $('#fsmexpand').prop('checked')
+        fsmexpand: $('#fsmexpand').prop('checked'),
+        lint: $('#lint').prop('checked')
     };
     const transform = $('#transform').prop('checked');
     const layoutEngine = $('#layout').val();
@@ -393,6 +443,7 @@ function runquery() {
             if (transform) circuit = digitaljs.transform.transformCircuit(circuit);
             const engines = { synch: digitaljs.engines.BrowserSynchEngine, worker: digitaljs.engines.WorkerEngine };
             mkcircuit(circuit, {layoutEngine: layoutEngine, engine: engines[simEngine]});
+            updateLint(responseData.lint);
         },
         error: (request, status, error) => {
             loading = false;
