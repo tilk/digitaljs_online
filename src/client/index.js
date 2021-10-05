@@ -191,6 +191,8 @@ function make_tab(filename, extension, content) {
         },
         gutters: ['CodeMirror-lint-markers']
     });
+    editor._is_dirty = false;
+    editor.on('changes', () => { editor._is_dirty = true; });
     editors[name] = editor;
 }
 
@@ -291,6 +293,27 @@ function destroycircuit() {
     $('#monitorbox button').prop('disabled', true).off();
 }
 
+function mk_markers(paper) {
+    let markers = [];
+    paper.on('cell:mouseover', (cellView) => {
+        for (const marker of markers) marker.clear();
+        markers = [];
+        const positions = cellView.model.get('source_positions');
+        if (!positions) return;
+        for (const pos of positions) {
+            const editor = editors[find_filename(pos.name)];
+            if (!editor || editor._is_dirty) continue;
+            const marker = editor.markText({line: pos.from.line-1, ch: pos.from.column-1},
+                                           {line: pos.to.line-1, ch: pos.to.column-1},
+                                           {css: 'background-color: yellow'});
+            markers.push(marker);
+        }
+    });
+    paper.on('cell:mouseout', (cellView) => {
+        for (const marker of markers) marker.clear();
+    });
+}
+
 function mkcircuit(data, opts) {
     loading = false;
     $('form').find('input, textarea, button, select').prop('disabled', false);
@@ -315,6 +338,8 @@ function mkcircuit(data, opts) {
         inputMarkup: '<input type="text" class="mr-2">'
     });
     paper = circuit.displayOn($('<div>').appendTo($('#paper')));
+    mk_markers(paper);
+    circuit.on('new:paper', (paper) => { mk_markers(paper); });
     for (const name of Object.keys(editors)) {
         if ($('#' + name).data('extension') == 'lua') 
             make_luarunner(name, circuit);
@@ -410,6 +435,7 @@ function runquery() {
     for (const [name, editor] of Object.entries(editors)) {
         const panel = $('#'+name);
         data[panel.data("filename") + "." + panel.data("extension")] = editor.getValue();
+        editor._is_dirty = false;
     }
     for (const [filename, file] of Object.entries(filedata)) {
         data[filename] = file.result;
