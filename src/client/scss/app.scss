@@ -31,6 +31,42 @@
     cursor: ns-resize;
 }
 
+.zoom-buttons-wrapper {
+    position: absolute;
+    top: 74px;
+    right: 30px;
+    display: flex;
+}
+
+.zoom-buttons-wrapper button {
+    border: none;
+    background-color: #6c757d;
+    box-shadow: 0 1px 4px rgba(0,0,0,.35);
+    font-weight: bold;
+    font-size: 23px;
+    color: #fff;
+    width: 42px;
+    height: 42px;
+    transition: all .3s;
+}
+
+.zoom-buttons-wrapper button:first-child {
+    border-radius: 5px 0 0 5px;
+}
+
+.zoom-buttons-wrapper button:nth-child(2) {
+    border-radius: 0 5px 5px 0;
+}
+
+.zoom-buttons-wrapper button:hover {
+    background-color: #444a4e;
+    box-shadow: 0 1px 4px rgba(0,0,0,.5);
+}
+
+.zoom-buttons-wrapper button:disabled {
+    background-color: #babdbf;
+}
+
 #paper, #monitorbox {
     box-sizing: border-box;
     overflow: auto;

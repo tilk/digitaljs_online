@@ -256,6 +256,7 @@ function updatebuttons() {
     $('#toolbar').find('button[name=next]').prop('disabled', running || !circuit.hasPendingEvents);
     $('#toolbar').find('button[name=fastfw]').prop('disabled', running);
     monitorview.autoredraw = !running;
+    $('button[name=zoom-in]').prop('disabled', false);
 }
 
 function destroycircuit() {
@@ -388,6 +389,31 @@ function mkcircuit(data, opts) {
     show_scale();
     monitorview.on('change:start', show_range);
     monitorview.on('change:pixelsPerTick', show_scale);
+
+
+    $('button[name=zoom-in]').click(e => {
+        // Zoom only if we already have a circuit on the paper
+        if (typeof paper.scale === 'function') {
+            const { sx: currentScale } = paper.scale();
+            paper.scale(1.15 * currentScale);
+        }
+    });
+
+    $('button[name=zoom-out]').click(e => {
+        // Zoom only if we already have a circuit on the paper
+        if (typeof paper.scale === 'function') {
+            const { sx: currentScale } = paper.scale();
+            paper.scale(0.85 * currentScale);
+        }
+    });
+
+    paper.on('scale', (currentScale) => {
+       if (currentScale >= 5) {
+            $('button[name=zoom-in]').prop('disabled', true);
+       } else {
+            $('button[name=zoom-in]').prop('disabled', false);
+       }
+    });
 }
 
 function makeLintMarker(cm, labels, severity, multiple) {
