@@ -395,7 +395,7 @@ function mkcircuit(data, opts) {
         // Zoom only if we already have a circuit on the paper
         if (typeof paper.scale === 'function') {
             const { sx: currentScale } = paper.scale();
-            paper.scale(1.15 * currentScale);
+            paper.scale(1.1 * currentScale);
         }
     });
 
@@ -403,7 +403,7 @@ function mkcircuit(data, opts) {
         // Zoom only if we already have a circuit on the paper
         if (typeof paper.scale === 'function') {
             const { sx: currentScale } = paper.scale();
-            paper.scale(0.85 * currentScale);
+            paper.scale(0.9 * currentScale);
         }
     });
 
