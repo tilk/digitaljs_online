@@ -17,13 +17,22 @@
 
 <body>
   <input type="file" style="display:none" id="input_load" />
-  <div id="grid">
+  <div class="main-wrapper-grid">
     <div id="toolbar">
       <div class="btn-toolbar" role="toolbar" aria-label="Toolbar">
-        <div class="mr-2">
-          <div class="digitaljs_logo" title="DigitalJS"></div>
+        <div class="mr-2 upper-toolbar-group digitaljs-logo" title="DigitalJS"></div>
+        <div id="synthesize-bar">
+          <form>
+            <button id="synthesize-btn" title="Synthesize and simulate!" type="submit" class="btn btn-primary">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"
+                stroke-linecap="round" stroke-linejoin="round" class="feather feather-play">
+                <polygon points="5 3 19 12 5 21 5 3"></polygon>
+              </svg>
+              Run
+            </button>
+          </form>
         </div>
-        <div class="symbola btn-group mr-2" role="group" aria-label="Time control">
+        <div class="symbola btn-group mr-2 upper-toolbar-group" role="group" aria-label="Time control">
           <button name="pause" type="button" class="btn btn-secondary" title="Pause simulation"
             disabled="true">⏸</button>
           <button name="resume" type="button" class="btn btn-secondary" title="Resume simulation"
@@ -35,182 +44,217 @@
           <button name="next" type="button" class="btn btn-secondary" title="Run until next event"
             disabled="true">⇥</button>
         </div>
-        <div class="input-group mr-2">
+        <div class="input-group mr-2 upper-toolbar-group">
           <div class="input-group-prepend">
             <span class="symbola input-group-text" title="Current tick">⏱</span>
           </div>
           <input type="text" class="form-control" disabled="disabled" id="tick" />
         </div>
-        <div class="symbola btn-group mr-2" role="group" aria-label="Saving and sharing">
+        <div class="symbola btn-group mr-2 upper-toolbar-group" role="group" aria-label="Saving and sharing">
           <button name="load" type="button" class="btn btn-secondary" title="Load from file" disabled="true">📁</button>
           <button name="save" type="button" class="btn btn-secondary" title="Save to file" disabled="true">💾</button>
           <button name="link" type="button" class="btn btn-secondary" title="Get link" disabled="true">🔗</button>
         </div>
       </div>
     </div>
-    <div id="editor">
-      <nav>
-        <div class="nav nav-tabs" role="tablist">
-          <a href="#start" class="nav-item nav-link active" role="tab" data-toggle="tab" aria-controls="start"
-            aria-selected="true">Setup</a>
-          <a href="#iopanel" class="nav-item nav-link" role="tab" data-toggle="tab" aria-controls="start"
-            aria-selected="true">I/O</a>
-        </div>
-      </nav>
-      <div class="tab-content">
-        <div role="tabpanel" class="tab-pane tab-padded active" id="start">
-          <h1 class="text-primary">DigitalJS Online</h1>
-          <p>This is a demonstration app for the
-            <a href="https://github.com/tilk/digitaljs">DigitalJS</a> digital logic simulator and the
-            <a href="https://github.com/tilk/yosys2digitaljs">yosys2digitaljs</a> netlist format converter,
-            by <a href="http://www.tilk.eu/">Marek Materzok</a>,
-            <a href="http://www.ii.uni.wroc.pl/">University of Wrocław</a>.
-            The source files <a href="https://github.com/tilk/digitaljs_online">are on Github</a>.
-            Contributions are welcome!
-            This was made possible by the
-            <a href="http://www.clifford.at/yosys/">Yosys</a> open-source hardware synthesis framework.
-          </p>
-          <p>Create a new tab and enter your SystemVerilog code, or load an example by using the dropdown menu,
-            and press the Synthesize button to start the simulation.</p>
-          <div class="form-group">
-            <div class="form-inline">
+    <div class="grid">
+      <div class="editor-circuit-wrapper">
+        <div id="editor-tab" class="tab-wrapper">
+          <nav>
+            <div class="nav nav-tabs" role="tablist">
+              <a href="#start" class="nav-item nav-link active" role="tab" data-toggle="tab" aria-controls="start"
+                aria-selected="true">Setup</a>
+              <a href="#iopanel" class="nav-item nav-link" role="tab" data-toggle="tab" aria-controls="start"
+                aria-selected="true">I/O</a>
+            </div>
+          </nav>
+          <div class="tab-content">
+            <div role="tabpanel" class="tab-pane tab-padded active" id="start">
+              <h1 class="text-primary">DigitalJS Online</h1>
+              <p>This is a demonstration app for the
+                <a href="https://github.com/tilk/digitaljs">DigitalJS</a> digital logic simulator and the
+                <a href="https://github.com/tilk/yosys2digitaljs">yosys2digitaljs</a> netlist format converter,
+                by <a href="http://www.tilk.eu/">Marek Materzok</a>,
+                <a href="http://www.ii.uni.wroc.pl/">University of Wrocław</a>.
+                The source files <a href="https://github.com/tilk/digitaljs_online">are on Github</a>.
+                Contributions are welcome!
+                This was made possible by the
+                <a href="http://www.clifford.at/yosys/">Yosys</a> open-source hardware synthesis framework.
+              </p>
+              <p>Create a new tab and enter your SystemVerilog code, or load an example by using the dropdown menu,
+                and press the Synthesize button to start the simulation.</p>
+              <div class="form-group">
+                <div class="form-inline">
 
-              <input type="text" name="newtabname" placeholder="file name" pattern="[a-zA-Z0-9_-]*" defaultValue="input"
-                class="form-control mr-1">
+                  <input type="text" name="newtabname" placeholder="file name" pattern="[a-zA-Z0-9_-]*" spellcheck="false" autocapitalize="false" autocomplete="false"
+                    defaultValue="input" class="form-control mr-1">
 
-              <div class="dropdown">
-                <button class="btn btn-secondary dropdown-toggle mr-1" type="button" id="exten" data-extension="sv"
-                  data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                  .sv
-                </button>
-                <div class="dropdown-menu" aria-labelledby="excode" id="extens">
-                  <a class="dropdown-item" href="#" data-extension="sv">.sv (SystemVerilog, Yosys native)</a>
-                  <a class="dropdown-item" href="#" data-extension="v">.v (Verilog, Yosys native)</a>
-                  <a class="dropdown-item" href="#" data-extension="vh">.vh (Verilog hex file)</a>
-                  <a class="dropdown-item" href="#" data-extension="lua">.lua (Lua script)</a>
+                  <div class="dropdown">
+                    <button class="btn btn-secondary dropdown-toggle mr-1" type="button" id="exten" data-extension="sv"
+                      data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                      .sv
+                    </button>
+                    <div class="dropdown-menu" aria-labelledby="excode" id="extens">
+                      <a class="dropdown-item" href="#" data-extension="sv">.sv (SystemVerilog, Yosys native)</a>
+                      <a class="dropdown-item" href="#" data-extension="v">.v (Verilog, Yosys native)</a>
+                      <a class="dropdown-item" href="#" data-extension="vh">.vh (Verilog hex file)</a>
+                      <a class="dropdown-item" href="#" data-extension="lua">.lua (Lua script)</a>
+                    </div>
+                  </div>
+
+                  <button class="btn btn-primary" type="button" id="newtab">Create file</button>
                 </div>
               </div>
 
-              <button class="btn btn-primary" type="button" id="newtab">Create file</button>
-            </div>
-          </div>
+              <div id="dropzone">Drop your files here or click for a file dialog</div>
 
-          <div id="dropzone">Drop your files here or click for a file dialog</div>
-
-          <div class="form-group">
-            <div class="dropdown">
-              <button class="btn btn-secondary dropdown-toggle" type="button" id="excode" data-toggle="dropdown"
-                aria-haspopup="true" aria-expanded="false">
-                Load example code
-              </button>
-              <div class="dropdown-menu" aria-labelledby="excode" id="excodes">
+              <div class="form-group">
+                <div class="dropdown">
+                  <button class="btn btn-secondary dropdown-toggle" type="button" id="excode" data-toggle="dropdown"
+                    aria-haspopup="true" aria-expanded="false">
+                    Load example code
+                  </button>
+                  <div class="dropdown-menu" aria-labelledby="excode" id="excodes">
+                  </div>
+                </div>
               </div>
+              <form>
+                <div class="form-group">
+                  <label for="files">Additional SystemVerilog files:</label>
+                  <input type="file" class="form-control-file" id="files" multiple="true">
+                </div>
+                <div class="form-group form-check" data-bs-toggle="tooltip"
+                  title="Enables Yosys optimizations of the synthesized circuit. This might make the circuit differ significantly to its HDL specification. This corresponds to the 'opt -full' Yosys command.">
+                  <input type="checkbox" id="opt" class="form-check-input">
+                  <label for="opt" class="form-check-label">Optimize in Yosys</label>
+                </div>
+                <div class="form-group form-check" data-bs-toggle="tooltip"
+                  title="Enables post-processing of Yosys output to reduce the number of components and improve readability.">
+                  <input type="checkbox" id="transform" class="form-check-input" checked>
+                  <label for="transform" class="form-check-label">Simplify diagram</label>
+                </div>
+                <div class="form-group form-check" data-bs-toggle="tooltip"
+                  title="Enables checking for common problems using the Verilator compiler.">
+                  <input type="checkbox" id="lint" class="form-check-input" checked>
+                  <label for="lint" class="form-check-label">Lint source code using <a
+                      href="https://verilator.org/">Verilator</a></label>
+                </div>
+                <div class="form-group" data-bs-toggle="tooltip"
+                  title="Changes how the circuit elements are automatically positioned after synthesis.">
+                  <label for="layout">Layout engine</label>
+                  <select id="layout" class="form-control">
+                    <option value="elkjs">ElkJS (more readable)</option>
+                    <option value="dagre">Dagre (legacy)</option>
+                  </select>
+                </div>
+                <div class="form-group" data-bs-toggle="tooltip"
+                  title="Changes how the synthesized circuit is simulated. The synchronous engine is well tested, but it's also very slow.">
+                  <label for="engine">Simulation engine</label>
+                  <select id="engine" class="form-control">
+                    <option value="worker">WebWorker (faster and responsive)</option>
+                    <option value="synch">Synchronous (extensible but slow)</option>
+                  </select>
+                </div>
+                <div class="form-group" data-bs-toggle="tooltip"
+                  title="Enables finite state machine processing in Yosys. This corresponds to the 'fsm' and 'fsm -nomap' Yosys commands.">
+                  <label for="fsm">FSM transform (experimental)</label>
+                  <select id="fsm" class="form-control">
+                    <option value="">No FSM transform</option>
+                    <option value="yes">FSM transform</option>
+                    <option value="nomap">FSM as circuit element</option>
+                  </select>
+                </div>
+                <div class="form-group form-check" data-bs-toggle="tooltip"
+                  title="This corresponds to the 'fsm_expand' Yosys command.">
+                  <input type="checkbox" id="fsmexpand" class="form-check-input">
+                  <label for="fsmexpand" class="form-check-label">Merge more logic into FSM</label>
+                </div>
+              </form>
+            </div>
+            <div role="tabpanel" class="tab-pane tab-padded" id="iopanel">
             </div>
           </div>
-          <form>
-            <div class="form-group">
-              <label for="files">Additional SystemVerilog files:</label>
-              <input type="file" class="form-control-file" id="files" multiple="true">
-            </div>
-            <div class="form-group form-check" data-bs-toggle="tooltip"
-              title="Enables Yosys optimizations of the synthesized circuit. This might make the circuit differ significantly to its HDL specification. This corresponds to the 'opt -full' Yosys command.">
-              <input type="checkbox" id="opt" class="form-check-input">
-              <label for="opt" class="form-check-label">Optimize in Yosys</label>
-            </div>
-            <div class="form-group form-check" data-bs-toggle="tooltip"
-              title="Enables post-processing of Yosys output to reduce the number of components and improve readability.">
-              <input type="checkbox" id="transform" class="form-check-input" checked>
-              <label for="transform" class="form-check-label">Simplify diagram</label>
-            </div>
-            <div class="form-group form-check" data-bs-toggle="tooltip"
-              title="Enables checking for common problems using the Verilator compiler.">
-              <input type="checkbox" id="lint" class="form-check-input" checked>
-              <label for="lint" class="form-check-label">Lint source code using <a
-                  href="https://verilator.org/">Verilator</a></label>
-            </div>
-            <div class="form-group" data-bs-toggle="tooltip"
-              title="Changes how the circuit elements are automatically positioned after synthesis.">
-              <label for="layout">Layout engine</label>
-              <select id="layout" class="form-control">
-                <option value="elkjs">ElkJS (more readable)</option>
-                <option value="dagre">Dagre (legacy)</option>
-              </select>
-            </div>
-            <div class="form-group" data-bs-toggle="tooltip"
-              title="Changes how the synthesized circuit is simulated. The synchronous engine is well tested, but it's also very slow.">
-              <label for="engine">Simulation engine</label>
-              <select id="engine" class="form-control">
-                <option value="worker">WebWorker (faster and responsive)</option>
-                <option value="synch">Synchronous (extensible but slow)</option>
-              </select>
-            </div>
-            <div class="form-group" data-bs-toggle="tooltip"
-              title="Enables finite state machine processing in Yosys. This corresponds to the 'fsm' and 'fsm -nomap' Yosys commands.">
-              <label for="fsm">FSM transform (experimental)</label>
-              <select id="fsm" class="form-control">
-                <option value="">No FSM transform</option>
-                <option value="yes">FSM transform</option>
-                <option value="nomap">FSM as circuit element</option>
-              </select>
-            </div>
-            <div class="form-group form-check" data-bs-toggle="tooltip"
-              title="This corresponds to the 'fsm_expand' Yosys command.">
-              <input type="checkbox" id="fsmexpand" class="form-check-input">
-              <label for="fsmexpand" class="form-check-label">Merge more logic into FSM</label>
-            </div>
-          </form>
         </div>
-        <div role="tabpanel" class="tab-pane tab-padded" id="iopanel">
+        <div id="gutter_horiz" class="gutter gutter-horizontal"></div>
+        <div id="circuit-tab" class="tab-wrapper">
+          <div class="zoom-buttons-wrapper">
+            <button name="zoom-out">–</button>
+            <button name="zoom-in">+</button>
+          </div>
+          <div id="paper">
+          </div>
         </div>
       </div>
-      <div id="synthesize-bar">
-        <form>
-          <button type="submit" class="btn btn-primary">Synthesize and simulate!</button>
-        </form>
-      </div>
-    </div>
-    <div id="gutter_horiz" class="gutter gutter-horizontal"></div>
-    <div id="paper">
-    </div>
-    <div class="zoom-buttons-wrapper">
-      <button name="zoom-out">–</button>
-      <button name="zoom-in">+</button>
-    </div>
-    <div id="gutter_vert" class="gutter gutter-vertical"></div>
-    <div id="monitorbox">
-      <div class="btn-toolbar" role="toolbar" aria-label="Toolbar">
-        <div class="symbola btn-group mr-2" role="group" aria-label="Scale control">
-          <button name="ppt_up" type="button" class="btn btn-secondary" title="Increase pixels per tick"
-            disabled="true">+</button>
-          <button name="ppt_down" type="button" class="btn btn-secondary" title="Decrease pixels per tick"
-            disabled="true">-</button>
-        </div>
-        <div class="input-group mr-2">
-          <div class="input-group-prepend">
-            <span class="input-group-text" title="Ticks per grid line">scale</span>
+
+      <div id="gutter_vert" class="gutter gutter-vertical"></div>
+
+      <div id="monitorbox">
+        <div class="btn-toolbar" role="toolbar" aria-label="Toolbar">
+          <div class="symbola btn-group mr-2" role="group" aria-label="Scale control">
+            <button name="ppt_up" type="button" class="btn btn-secondary" title="Increase pixels per tick"
+              disabled="true">+</button>
+            <button name="ppt_down" type="button" class="btn btn-secondary" title="Decrease pixels per tick"
+              disabled="true">-</button>
           </div>
-          <input type="text" class="form-control" disabled="disabled" name="scale" />
-        </div>
-        <div class="symbola btn-group mr-2" role="group" aria-label="Time control">
-          <button name="live" type="button" class="btn btn-secondary" title="Live mode" disabled="true">▶</button>
-          <button name="left" type="button" class="btn btn-secondary" title="Move left" disabled="true">←</button>
-          <button name="right" type="button" class="btn btn-secondary" title="Move right" disabled="true">→</button>
-        </div>
-        <div class="input-group mr-2">
-          <div class="input-group-prepend">
-            <span class="input-group-text" title="Display range">range</span>
+          <div class="input-group mr-2">
+            <div class="input-group-prepend">
+              <span class="input-group-text" title="Ticks per grid line">scale</span>
+            </div>
+            <input type="text" class="form-control" disabled="disabled" name="scale" />
           </div>
-          <input type="text" class="form-control" disabled="disabled" name="rangel" />
-          <div class="input-group-prepend input-group-append">
-            <span class="input-group-text">–</span>
+          <div class="symbola btn-group mr-2" role="group" aria-label="Time control">
+            <button name="live" type="button" class="btn btn-secondary" title="Live mode" disabled="true">▶</button>
+            <button name="left" type="button" class="btn btn-secondary" title="Move left" disabled="true">←</button>
+            <button name="right" type="button" class="btn btn-secondary" title="Move right" disabled="true">→</button>
           </div>
-          <input type="text" class="form-control" disabled="disabled" name="rangeh" />
+          <div class="input-group mr-2">
+            <div class="input-group-prepend">
+              <span class="input-group-text" title="Display range">range</span>
+            </div>
+            <input type="text" class="form-control" disabled="disabled" name="rangel" />
+            <div class="input-group-prepend input-group-append">
+              <span class="input-group-text">–</span>
+            </div>
+            <input type="text" class="form-control" disabled="disabled" name="rangeh" />
+          </div>
         </div>
-      </div>
-      <div id="monitor">
+        <div id="monitor">
+        </div>
       </div>
     </div>
   </div>
+
+  <div id="tab-buttons-wrapper">
+    <button id="editor-tab-btn" class="tab-btn">
+      <strong style="font-size: 1.2em">&lt;/&gt;</strong><br>
+      <span style="line-height: 90%">Code</span>
+    </button>
+    <button id="circuit-tab-btn" class="tab-btn">
+      <svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+        x="0px" y="0px" viewBox="0 0 224 224" style="enable-background:new 0 0 224 224;" xml:space="preserve">
+        <g>
+          <g>
+            <g>
+              <path d="M200,122c-11.869,0-21.725,8.668-23.639,20H160c-13.234,0-24,10.76-24,23.986V210h8v-44.014
+           c0-8.814,7.178-15.986,16-15.986h16.361c1.913,11.332,11.77,20,23.639,20c13.234,0,24-10.766,24-24S213.234,122,200,122z
+            M200,162c-8.822,0-16-7.178-16-16s7.178-16,16-16s16,7.178,16,16S208.822,162,200,162z" />
+              <path d="M92,62H76c0-13.234-10.766-24-24-24S28,48.766,28,62s10.766,24,24,24c10.426,0,19.295-6.693,22.6-16H92
+           c8.822,0,16,7.188,16,16.024V210h8V86.024C116,72.777,105.234,62,92,62z M52,78c-8.822,0-16-7.178-16-16s7.178-16,16-16
+           s16,7.178,16,16S60.822,78,52,78z" />
+              <path d="M64,122H47.639c-1.914-11.332-11.77-20-23.639-20c-13.234,0-24,10.766-24,24s10.766,24,24,24
+           c11.869,0,21.725-8.668,23.639-20H64c8.822,0,16,7.184,16,16.014V210h8v-63.986C88,132.774,77.234,122,64,122z M24,142
+           c-8.822,0-16-7.178-16-16s7.178-16,16-16s16,7.178,16,16C40,134.822,32.822,142,24,142z" />
+              <path d="M163.461,94h12.9c1.913,11.332,11.77,20,23.639,20c13.234,0,24-10.766,24-24s-10.766-24-24-24
+           c-11.869,0-21.725,8.668-23.639,20h-12.9c-6.297,0-11.42-5.125-11.42-11.426V14h-8v60.574C144.041,85.285,152.752,94,163.461,94z
+            M200,74c8.822,0,16,7.178,16,16s-7.178,16-16,16s-16-7.178-16-16S191.178,74,200,74z" />
+            </g>
+          </g>
+        </g>
+      </svg><br>
+      Circuit
+    </button>
+  </div>
+
 </body>
 
 </html>

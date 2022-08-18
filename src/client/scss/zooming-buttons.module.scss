@@ -1,0 +1,33 @@
+.zoom-buttons-wrapper {
+  display: flex;
+  justify-content: end;
+}
+
+.zoom-buttons-wrapper button {
+  border: none;
+  background-color: #6c757d;
+  box-shadow: 0 1px 4px rgba(0,0,0,.35);
+  font-weight: bold;
+  font-size: 1.43rem;
+  color: #fff;
+  width: 2.625rem;
+  height: 2.625rem;
+  transition: all .3s;
+}
+
+.zoom-buttons-wrapper button:first-child {
+  border-radius: 0.3125rem 0 0 0.3125rem;
+}
+
+.zoom-buttons-wrapper button:nth-child(2) {
+  border-radius: 0 0.3125rem 0.3125rem 0;
+}
+
+.zoom-buttons-wrapper button:hover {
+  background-color: #444a4e;
+  box-shadow: 0 1px 4px rgba(0,0,0,.5);
+}
+
+.zoom-buttons-wrapper button:disabled {
+  background-color: #babdbf;
+}
