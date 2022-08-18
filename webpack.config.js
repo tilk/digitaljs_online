@@ -46,6 +46,10 @@ module.exports = (env, argv) => {
                     options: {
                         exposes: ['$']
                     }
+                },
+                {
+                    test: /circuit-icon\.svg$/,
+                    type: 'asset/source'
                 }
             ]
         },
