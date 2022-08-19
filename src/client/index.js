@@ -249,6 +249,7 @@ function updatebuttons() {
     $('#toolbar').find('button[name=load]').prop('disabled', false);
     $('#toolbar').find('button[name=save]').prop('disabled', false);
     $('#toolbar').find('button[name=link]').prop('disabled', false);
+    $('#toolbar').find('button[name=export]').prop('disabled', false);
     const running = circuit.running;
     $('#toolbar').find('button[name=pause]').prop('disabled', !running);
     $('#toolbar').find('button[name=resume]').prop('disabled', running);
@@ -388,6 +389,13 @@ function mkcircuit(data, opts) {
     show_scale();
     monitorview.on('change:start', show_range);
     monitorview.on('change:pixelsPerTick', show_scale);
+}
+
+function exportCircuitAsSvg() {
+    const svgString = circuit.getSvgExport(paper);
+
+    const blob = new Blob([svgString], {type: "data:image/svg+xml;charset=utf-8"});
+    saveAs(blob, 'exported-circuit.svg');
 }
 
 function makeLintMarker(cm, labels, severity, multiple) {
@@ -544,6 +552,8 @@ $('button[name=save]').click(e => {
     const blob = new Blob([JSON.stringify(json)], {type: "application/json;charset=utf-8"});
     saveAs(blob, 'circuit.json');
 });
+
+$('button[name=export]').click(exportCircuitAsSvg);
 
 $('button[name=link]')
     .popover({
