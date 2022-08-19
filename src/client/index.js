@@ -392,14 +392,10 @@ function mkcircuit(data, opts) {
 }
 
 function exportCircuitAsSvg() {
-    // Create an artificial link and click it to download the temporary file
-    let downloadLink = document.createElement('a');
-    downloadLink.download = 'exported_circuit.svg';
-    downloadLink.href = circuit.getSvgExportUrl(document.querySelector('#paper svg'));
-    downloadLink.click();
+    const svgString = circuit.getSvgExport(paper);
 
-    // Clean up
-    downloadLink.remove();
+    const blob = new Blob([svgString], {type: "data:image/svg+xml;charset=utf-8"});
+    saveAs(blob, 'exported-circuit.svg');
 }
 
 function makeLintMarker(cm, labels, severity, multiple) {
