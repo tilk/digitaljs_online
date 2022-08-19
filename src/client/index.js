@@ -244,6 +244,7 @@ function updatebuttons() {
     if (circuit == undefined) {
         $('.upper-toolbar-group').find('button').prop('disabled', true);
         $('#circuit-tab-btn').prop('disabled', true);
+        $('.zoom-buttons-wrapper').addClass('d-none');
         if (!loading) $('#toolbar').find('button[name=load]').prop('disabled', false);
         return;
     }
@@ -257,7 +258,7 @@ function updatebuttons() {
     $('#toolbar').find('button[name=next]').prop('disabled', running || !circuit.hasPendingEvents);
     $('#toolbar').find('button[name=fastfw]').prop('disabled', running);
     monitorview.autoredraw = !running;
-    $('button[name=zoom-in]').prop('disabled', false);
+    $('.zoom-buttons-wrapper').removeClass('d-none');
     $('#circuit-tab-btn').prop('disabled', false);
 }
 
@@ -390,19 +391,13 @@ function mkcircuit(data, opts) {
 
 
     $('button[name=zoom-in]').click(e => {
-        // Zoom only if we already have a circuit on the paper
-        if (circuit !== undefined) {
-            const { sx: currentScale } = paper.scale();
-            paper.scale(1.1 * currentScale);
-        }
+        const { sx: currentScale } = paper.scale();
+        paper.scale(currentScale + 0.1);
     });
 
     $('button[name=zoom-out]').click(e => {
-        // Zoom only if we already have a circuit on the paper
-        if (circuit !== undefined) {
-            const { sx: currentScale } = paper.scale();
-            paper.scale(0.9 * currentScale);
-        }
+        const { sx: currentScale } = paper.scale();
+        paper.scale(currentScale - 0.1);
     });
 
     paper.on('scale', (currentScale) => {
