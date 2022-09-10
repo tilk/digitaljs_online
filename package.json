@@ -37,6 +37,7 @@
     "@babel/core": "^7.17.0",
     "@babel/plugin-proposal-class-properties": "^7.16.7",
     "@babel/plugin-proposal-private-methods": "^7.16.11",
+    "ajv": "^7.0.3",
     "babel-loader": "^8.2.3",
     "clean-webpack-plugin": "^2.0.2",
     "concurrently": "^6.5.1",
@@ -49,10 +50,10 @@
     "nodemon": "^2.0.15",
     "sass-loader": "^12.4.0",
     "style-loader": "^3.3.1",
+    "svg-inline-loader": "^0.8.2",
     "webpack": "^5.68.0",
     "webpack-cli": "^4.9.2",
-    "webpack-dev-server": "^4.7.4",
-    "ajv": "^7.0.3"
+    "webpack-dev-server": "^4.7.4"
   },
   "homepage": "https://github.com/tilk/digitaljs_online",
   "repository": {
