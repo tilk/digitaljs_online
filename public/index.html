@@ -59,7 +59,7 @@
     </div>
     <div class="grid">
       <div class="editor-circuit-wrapper">
-        <div id="editor-tab" class="tab-wrapper">
+        <div id="editor-tab" class="tab-wrapper editor-tab active">
           <nav>
             <div class="nav nav-tabs" role="tablist">
               <a href="#start" class="nav-item nav-link active" role="tab" data-toggle="tab" aria-controls="start"
@@ -176,7 +176,7 @@
           </div>
         </div>
         <div id="gutter_horiz" class="gutter gutter-horizontal"></div>
-        <div id="circuit-tab" class="tab-wrapper">
+        <div class="tab-wrapper circuit-tab">
           <div id="paper">
           </div>
         </div>
@@ -221,11 +221,11 @@
   </div>
 
   <div id="tab-buttons-wrapper">
-    <button id="editor-tab-btn" class="tab-btn">
+    <button class="tab-btn editor-tab active">
       <strong style="font-size: 1.2em">&lt;/&gt;</strong><br>
       <span style="line-height: 90%">Code</span>
     </button>
-    <button id="circuit-tab-btn" class="tab-btn">
+    <button class="tab-btn circuit-tab">
       <div id="circuit-icon"></div>
       Circuit
     </button>

@@ -80,7 +80,7 @@ div.tab-content form {
     .tab-wrapper {
         display: none;
 
-        &.open {
+        &.active {
             display: block;
         }
     }

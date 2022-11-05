@@ -246,7 +246,7 @@ let loading = false, circuit, paper, monitor, monitorview, monitormem, iopanel, 
 function updatebuttons() {
     if (circuit == undefined) {
         $('.upper-toolbar-group').find('button').prop('disabled', true);
-        $('#circuit-tab-btn').prop('disabled', true);
+        $('button.circuit-tab').prop('disabled', true);
         if (!loading) $('#toolbar').find('button[name=load]').prop('disabled', false);
         return;
     }
@@ -260,7 +260,7 @@ function updatebuttons() {
     $('#toolbar').find('button[name=next]').prop('disabled', running || !circuit.hasPendingEvents);
     $('#toolbar').find('button[name=fastfw]').prop('disabled', running);
     monitorview.autoredraw = !running;
-    $('#circuit-tab-btn').prop('disabled', false);
+    $('button.circuit-tab').prop('disabled', false);
 }
 
 function destroycircuit() {
@@ -489,7 +489,7 @@ function runquery() {
 $('button[type=submit]').click(e => {
     e.preventDefault();
     $('#synthesize-bar .query-alert').removeClass('fade').alert('close');
-    $('form').find('input, textarea, select').prop('disabled', true);
+    $('form').find('input, textarea, button, select').prop('disabled', true);
     filedata = {};
     filenum = document.getElementById('files').files.length;
     for (const file of document.getElementById('files').files) {
@@ -502,7 +502,7 @@ $('button[type=submit]').click(e => {
     if (filenum == 0) runquery();
 
     if (window.innerWidth <= 925) {
-        openTab(circuitTabId);
+        openTab(circuitTabClass);
     }
 });
 
@@ -614,32 +614,14 @@ $('[data-bs-toggle="tooltip"]').tooltip();
 });
 
 
-let isAnyTabOpen = false;
-const codeTabId = 'editor-tab';
-const circuitTabId = 'circuit-tab';
-const codeTabBtn = $('#editor-tab-btn');
-const circuitTabBtn = $('#circuit-tab-btn');
-
-function openTab(tabId, element) {
-  $('.tab-wrapper').removeClass('open');
-  $(`#${tabId}`).addClass('open');
-
-  $('.tab-btn').removeClass('active');
-  $(`#${tabId}-btn`).addClass('active');
-
-  isAnyTabOpen = true;
+function openTab(tabClass) {
+    $('.tab-wrapper').removeClass('active');
+    $('.tab-btn').removeClass('active');
+    $(`.${tabClass}`).addClass('active');
 }
 
-// Initially open the code tab.
-if (window.innerWidth <= 925 && !isAnyTabOpen) {
-    openTab(codeTabId);
-}
+const editorTabClass = 'editor-tab';
+const circuitTabClass = 'circuit-tab';
 
-window.onresize = () => {
-    if (window.innerWidth <= 925 && !isAnyTabOpen) {
-        openTab(codeTabId);
-    }
-};
-
-codeTabBtn.click(() => openTab(codeTabId));
-circuitTabBtn.click(() => openTab(circuitTabId));
+$(`button.${editorTabClass}`).click(() => openTab(editorTabClass));
+$(`button.${circuitTabClass}`).click(() => openTab(circuitTabClass));

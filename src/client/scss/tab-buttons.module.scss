@@ -2,10 +2,6 @@
   display: none;
 }
 
-#circuit-tab-btn>svg {
-  height: 60%;
-}
-
 @media (max-width: $mobile-ui-max-width) {
   $tab-buttons-height: 3.8rem;
 
