@@ -3,6 +3,7 @@ const HtmlWebpackPlugin = require("html-webpack-plugin");
 const CleanWebpackPlugin = require("clean-webpack-plugin");
 const CopyWebpackPlugin = require('copy-webpack-plugin');
 const MiniCssExtractPlugin = require("mini-css-extract-plugin");
+const HtmlWebpackInlineSVGPlugin = require('html-webpack-inline-svg-plugin');
 
 const outputDirectory = "dist";
 
@@ -48,9 +49,11 @@ module.exports = (env, argv) => {
                     }
                 },
                 {
-                    test: /circuit-icon\.svg$/,
-                    type: 'asset/source'
-                }
+                    test: /\.svg$/,
+                    type: "asset/inline",
+                    // Inline assets with the "inline" query parameter.
+                    resourceQuery: /inline/,
+                },
             ]
         },
         devServer: {
@@ -67,6 +70,7 @@ module.exports = (env, argv) => {
                 inject: 'head'
     //            favicon: "./public/favicon.ico"
             }),
+            new HtmlWebpackInlineSVGPlugin(),
             new CopyWebpackPlugin({
                 patterns: [
                     { from: 'public/*.+(ico|png|svg|webmanifest)', to: '[name][ext]' },

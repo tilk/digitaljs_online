@@ -16,7 +16,6 @@ import * as digitaljs from 'digitaljs';
 import * as digitaljs_lua from 'digitaljs_lua';
 import Split from 'split-grid';
 import { saveAs } from 'file-saver';
-import circuitIconSvg from '../../public/circuit-icon.svg';
 
 const examples = [
     ['sr_gate', 'SR latch'],
@@ -34,8 +33,6 @@ const examples = [
 ];
 
 $(window).on('load', () => {
-
-$('#circuit-icon').append(circuitIconSvg);
 
 Split({
     columnGutters: [{
