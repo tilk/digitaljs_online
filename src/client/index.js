@@ -498,9 +498,7 @@ $('button[type=submit]').click(e => {
     }
     if (filenum == 0) runquery();
 
-    if (window.innerWidth <= 925) {
-        openTab(circuitTabClass);
-    }
+    openTab(circuitTabClass);
 });
 
 $('button[name=pause]').click(e => {
