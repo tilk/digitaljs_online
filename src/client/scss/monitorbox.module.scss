@@ -1,0 +1,66 @@
+@import "~bootstrap/scss/bootstrap";
+
+#paper,
+#monitorbox {
+    box-sizing: border-box;
+}
+
+#monitorbox > div.btn-toolbar {
+  padding: 0.3125rem;
+  position: sticky;
+  top: 0;
+  background: white;
+  z-index: 1;
+
+  input[type=text] {
+      background: white;
+  }
+
+  input[name=scale] {
+      width: 4em;
+  }
+
+  input[name=rangel] {
+      text-align: right;
+  }
+
+  input[name=rangel],
+  input[name=rangeh] {
+      width: 6em;
+  }
+}
+
+#monitor > table button {
+  @extend .btn;
+  @extend .btn-sm;
+  @extend .btn-warning;
+  font-size: 0.9em;
+}
+
+#monitor > table td {
+  padding: 0em 0.2em;
+  &:last-of-type {
+      padding-right: 0em;
+  }
+}
+
+#monitor > table input[name=trigger] {
+  @extend .form-control;
+  @extend .form-control-sm;
+  width: 5em;
+  font-size: 1em;
+  padding: 0em 0.4em;
+};
+
+#monitor > table select {
+  @extend .form-control;
+  @extend .form-control-sm;
+  font-size: 1em;
+  width: auto;
+  padding: 0;
+  &[name=trigger] {
+      width: 5em;
+      text-align: center;
+  }
+}
+

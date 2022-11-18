@@ -1,0 +1,43 @@
+div.editor-tab >div.tab-content {
+
+  >div {
+      overflow: auto;
+  }
+
+  >div.tab-withbar {
+
+      >div:first-child {
+          @extend .border-bottom;
+          padding: 5px;
+      }
+
+      >div:last-child {
+          overflow: auto;
+      }
+  }
+
+  div.tab-padded:not(:empty) {
+      padding: 1em;
+  }
+}
+
+#dropzone {
+    @extend .mb-3;
+    @extend .p-3;
+    @extend .border-secondary;
+    @extend .rounded;
+    border: 2px solid;
+
+    &.dragover {
+        border-style: dashed;
+    }
+}
+
+nav .nav-item button.closeTab {
+    @extend .ml-1;
+    @extend .symbola;
+}
+
+nav .nav-item:not(.active) button.closeTab {
+    display: none;
+}

@@ -1,0 +1,40 @@
+#tab-buttons-wrapper {
+  display: none;
+}
+
+@media (max-width: $mobile-ui-max-width) {
+  $tab-buttons-height: 3.8rem;
+
+  #tab-buttons-wrapper {
+    display: flex;
+
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    height: $tab-buttons-height;
+    width: 100%;
+    border-top: 1px solid #dee2e6;
+
+    >button {
+      width: 50%;
+      background: #fff;
+      border: none;
+      padding: 0.45rem;
+      font-size: 0.92rem;
+
+      &.active {
+        background: rgb(240, 239, 239);
+        color: #007bff;
+        svg path { fill: #007bff; }
+      }
+
+      &:disabled {
+        color: #c4c4c4;
+        svg path { fill: #c4c4c4; }
+      }
+
+    }
+
+    z-index: 2;
+  }
+}

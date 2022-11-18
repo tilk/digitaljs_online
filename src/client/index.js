@@ -41,13 +41,13 @@ Split({
     }],
     rowGutters: [{
         element: document.querySelector('#gutter_vert'),
-        track: 2
+        track: 1
     }],
     columnMinSize: '100px',
     columnSnapOffset: 0
 });
 
-$('#editor > nav').on('click', 'a', function (e) {
+$('#editor-tab > nav').on('click', 'a', function (e) {
     e.preventDefault();
     $(this).tab('show');
 });
@@ -107,7 +107,7 @@ function close_tab (tab_a)
 }
 
 function find_filename(name) {
-    const list = $('#editor > .tab-content > .tab-pane').filter((_, el) => $(el).data('fullname') == name);
+    const list = $('#editor-tab > .tab-content > .tab-pane').filter((_, el) => $(el).data('fullname') == name);
     if (list.length == 0) return;
     return list[0].id;
 }
@@ -115,7 +115,7 @@ function find_filename(name) {
 function make_tab(filename, extension, content) {
     const orig_filename = filename;
     let fcnt = 0;
-    while ($('#editor > .tab-content > .tab-pane')
+    while ($('#editor-tab > .tab-content > .tab-pane')
             .filter((_, el) => $(el).data('filename') == filename && $(el).data('extension') == extension).length) {
         filename = orig_filename + fcnt++;
     }
@@ -124,7 +124,7 @@ function make_tab(filename, extension, content) {
         .attr('href', '#' + name)
         .attr('aria-controls', name)
         .text(filename + '.' + extension)
-        .appendTo($('#editor > nav div'));
+        .appendTo($('#editor-tab > nav div'));
     $('<button class="close closeTab" type="button">×</button>')
         .on('click', function (e) { close_tab(tab); })
         .appendTo(tab);
@@ -136,7 +136,7 @@ function make_tab(filename, extension, content) {
         .attr('data-filename', filename)
         .attr('data-extension', extension)
         .attr('data-fullname', filename + '.' + extension)
-        .appendTo($('#editor > .tab-content'));
+        .appendTo($('#editor-tab > .tab-content'));
     const ed_div = $('<textarea>').val(content).appendTo(panel);
     $(tab).tab('show');
     // Lua scripting support
@@ -242,7 +242,8 @@ let loading = false, circuit, paper, monitor, monitorview, monitormem, iopanel, 
 
 function updatebuttons() {
     if (circuit == undefined) {
-        $('#toolbar').find('button').prop('disabled', true);
+        $('.upper-toolbar-group').find('button').prop('disabled', true);
+        $('button.circuit-tab').prop('disabled', true);
         if (!loading) $('#toolbar').find('button[name=load]').prop('disabled', false);
         return;
     }
@@ -256,6 +257,7 @@ function updatebuttons() {
     $('#toolbar').find('button[name=next]').prop('disabled', running || !circuit.hasPendingEvents);
     $('#toolbar').find('button[name=fastfw]').prop('disabled', running);
     monitorview.autoredraw = !running;
+    $('button.circuit-tab').prop('disabled', false);
 }
 
 function destroycircuit() {
@@ -286,7 +288,7 @@ function destroycircuit() {
     for (const h of Object.values(helpers)) {
         h.shutdown();
     }
-    $('#editor > .tab-content > div[data-extension=lua] button').prop('disabled', true);
+    $('#editor-tab > .tab-content > div[data-extension=lua] button').prop('disabled', true);
     helpers = {};
     loading = true;
     updatebuttons();
@@ -351,7 +353,7 @@ function mkcircuit(data, opts) {
         updatebuttons();
     });
     updatebuttons();
-    $('#editor > .tab-content > div[data-extension=lua] button[name=luarun]').prop('disabled', false);
+    $('#editor-tab > .tab-content > div[data-extension=lua] button[name=luarun]').prop('disabled', false);
     $('#monitorbox button').prop('disabled', false);
     $('#monitorbox button[name=ppt_up]').on('click', (e) => { monitorview.pixelsPerTick *= 2; });
     $('#monitorbox button[name=ppt_down]').on('click', (e) => { monitorview.pixelsPerTick /= 2; });
@@ -369,13 +371,9 @@ function mkcircuit(data, opts) {
         });
     monitorview.on('change:live', (live) => { $('#monitorbox button[name=live]').toggleClass('active', live) });
     monitor.on('add', () => {
-        if ($('#monitorbox').height() == 0)
-            $('html > body > div').css('grid-template-rows', (idx, old) => {
-                const z = old.split(' ');
-                z[1] = '3fr';
-                z[3] = '1fr';
-                return z.join(' ');
-            });
+        if ($('#monitorbox').height() == 0) {
+            $('.grid').addClass('monitor-open');
+        }
     });
     const show_range = () => {
         $('#monitorbox input[name=rangel]').val(Math.round(monitorview.start));
@@ -444,7 +442,7 @@ function runquery() {
         $('<div class="query-alert alert alert-danger alert-dismissible fade show" role="alert"></div>')
             .append('<button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>')
             .append(document.createTextNode("No source files for synthesis."))
-            .prependTo($('#synthesize-bar'))
+            .appendTo($('#toolbar'))
             .alert();
         return;
     }
@@ -479,7 +477,7 @@ function runquery() {
                 .append('<button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>')
                 .append(document.createTextNode(request.responseJSON.error))
                 .append($("<pre>").text(request.responseJSON.yosys_stderr.trim()))
-                .prependTo($('#synthesize-bar'))
+                .appendTo($('#toolbar'))
                 .alert();
         }
     });
@@ -499,6 +497,8 @@ $('button[type=submit]').click(e => {
         reader.readAsText(file);
     }
     if (filenum == 0) runquery();
+
+    openTab(circuitTabClass);
 });
 
 $('button[name=pause]').click(e => {
@@ -608,3 +608,15 @@ $('[data-bs-toggle="tooltip"]').tooltip();
 
 });
 
+
+function openTab(tabClass) {
+    $('.tab-wrapper').removeClass('active');
+    $('.tab-btn').removeClass('active');
+    $(`.${tabClass}`).addClass('active');
+}
+
+const editorTabClass = 'editor-tab';
+const circuitTabClass = 'circuit-tab';
+
+$(`button.${editorTabClass}`).click(() => openTab(editorTabClass));
+$(`button.${circuitTabClass}`).click(() => openTab(circuitTabClass));

@@ -1,0 +1,33 @@
+#toolbar {
+  width: 100%;
+  box-sizing: border-box;
+  border-bottom: 5px solid #eee;
+  padding: 0 5px;
+}
+
+.upper-toolbar-group {
+  margin: 5px 2px;
+}
+
+.digitaljs-logo {
+  width: 2.25rem;
+  height: 2.25rem;
+  background-image: url('digitaljs.svg?inline');
+  background-size: 100%;
+
+  position: relative;
+  top: 50%;
+}
+
+#synthesize-bar > form {
+  position: relative;
+  top: 50%;
+  transform: translateY(-50%);
+
+  margin-right: 0.75rem;
+}
+
+input#tick {
+  background: white;
+  width: 8em;
+}
