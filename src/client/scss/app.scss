@@ -61,6 +61,12 @@ div.tab-content form {
     font-family: "Symbola", $font-family-sans-serif;
 }
 
+.zoom-buttons-wrapper {
+    float: right;
+    margin: 1.5rem;
+    z-index: 1;
+}
+
 
 @media (max-width: $mobile-ui-max-width) {
     .main-wrapper-grid {
