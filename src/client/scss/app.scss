@@ -62,7 +62,8 @@ div.tab-content form {
 }
 
 .zoom-buttons-wrapper {
-    float: right;
+    position: absolute;
+    right: 0;
     margin: 1.5rem;
     z-index: 1;
 }
