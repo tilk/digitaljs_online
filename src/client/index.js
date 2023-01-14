@@ -389,9 +389,16 @@ function mkcircuit(data, opts) {
     monitorview.on('change:start', show_range);
     monitorview.on('change:pixelsPerTick', show_scale);
 
-    $('button[name=zoom-in]').click(e => { circuit.zoomIn(paper); });
+    let paperScale = 0;
+    $('button[name=zoom-in]').click(e => {
+        paperScale++;
+        circuit._scaleAndRefreshPaper(paper, paperScale);
+     });
 
-    $('button[name=zoom-out]').click(e => { circuit.zoomOut(paper); });
+    $('button[name=zoom-out]').click(e => {
+        paperScale--;
+        circuit._scaleAndRefreshPaper(paper, paperScale);
+    });
 
     paper.on('scale', (currentScale) => {
        $('button[name=zoom-in]').prop('disabled', currentScale >= 5);
