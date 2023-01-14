@@ -392,12 +392,12 @@ function mkcircuit(data, opts) {
     let paperScale = 0;
     $('button[name=zoom-in]').click(e => {
         paperScale++;
-        circuit._scaleAndRefreshPaper(paper, paperScale);
+        circuit.scaleAndRefreshPaper(paper, paperScale);
      });
 
     $('button[name=zoom-out]').click(e => {
         paperScale--;
-        circuit._scaleAndRefreshPaper(paper, paperScale);
+        circuit.scaleAndRefreshPaper(paper, paperScale);
     });
 
     paper.on('scale', (currentScale) => {
