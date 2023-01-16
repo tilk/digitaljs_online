@@ -244,6 +244,7 @@ function updatebuttons() {
     if (circuit == undefined) {
         $('.upper-toolbar-group').find('button').prop('disabled', true);
         $('button.circuit-tab').prop('disabled', true);
+        $('.zoom-buttons-wrapper').addClass('d-none');
         if (!loading) $('#toolbar').find('button[name=load]').prop('disabled', false);
         return;
     }
@@ -258,6 +259,7 @@ function updatebuttons() {
     $('#toolbar').find('button[name=fastfw]').prop('disabled', running);
     monitorview.autoredraw = !running;
     $('button.circuit-tab').prop('disabled', false);
+    $('.zoom-buttons-wrapper').removeClass('d-none');
 }
 
 function destroycircuit() {
@@ -386,6 +388,21 @@ function mkcircuit(data, opts) {
     show_scale();
     monitorview.on('change:start', show_range);
     monitorview.on('change:pixelsPerTick', show_scale);
+
+    let paperScale = 0;
+    $('button[name=zoom-in]').click(e => {
+        paperScale++;
+        circuit.scaleAndRefreshPaper(paper, paperScale);
+     });
+
+    $('button[name=zoom-out]').click(e => {
+        paperScale--;
+        circuit.scaleAndRefreshPaper(paper, paperScale);
+    });
+
+    paper.on('scale', (currentScale) => {
+       $('button[name=zoom-in]').prop('disabled', currentScale >= 5);
+    });
 }
 
 function makeLintMarker(cm, labels, severity, multiple) {
