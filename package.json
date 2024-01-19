@@ -1,6 +1,6 @@
 {
   "name": "digitaljs_online",
-  "version": "0.13.0",
+  "version": "0.13.1",
   "description": "Online demonstration for DigitalJS",
   "main": "src/server/index.js",
   "scripts": {
@@ -31,7 +31,7 @@
     "sql-template-strings": "^2.2.2",
     "sqlite": "^4.0.23",
     "sqlite3": "^5.0.2",
-    "yosys2digitaljs": "^0.7.0"
+    "yosys2digitaljs": "^0.8.0"
   },
   "devDependencies": {
     "@babel/core": "^7.17.0",
