@@ -597,6 +597,9 @@ $('html').click(e => {
 
 window.onpopstate = () => {
     const hash = window.location.hash.slice(1);
+    const transform = $('#transform').prop('checked');
+    const layoutEngine = $('#layout').val();
+    const simEngine = $('#engine').val();
     if (loading || !hash) return;
     destroycircuit();
     $.ajax({
@@ -604,7 +607,9 @@ window.onpopstate = () => {
         url: '/api/circuit/' + hash,
         dataType: 'json',
         success: (responseData, status, xhr) => {
-            mkcircuit(responseData);
+            if (transform) responseData = digitaljs.transform.transformCircuit(responseData);
+            const engines = { synch: digitaljs.engines.BrowserSynchEngine, worker: digitaljs.engines.WorkerEngine };
+            mkcircuit(responseData, {layoutEngine: layoutEngine, engine: engines[simEngine]});
         },
         error: (request, status, error) => {
             loading = false;
