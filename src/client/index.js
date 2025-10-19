@@ -16,6 +16,9 @@ import * as digitaljs from 'digitaljs';
 import * as digitaljs_lua from 'digitaljs_lua';
 import Split from 'split-grid';
 import { saveAs } from 'file-saver';
+import { runYosys } from 'https://cdn.jsdelivr.net/npm/@yowasp/yosys/gen/bundle.js';
+
+runYosys(["--version"]);
 
 const examples = [
     ['sr_gate', 'SR latch'],
@@ -341,6 +344,7 @@ function mkcircuit(data, opts) {
         lampMarkup: '<div class="form-check"><input type="checkbox"></input></div>',
         inputMarkup: '<input type="text" class="mr-2">'
     });
+	// TODO: ERROR IS HERE
     paper = circuit.displayOn($('<div>').appendTo($('#paper')));
     mk_markers(paper);
     circuit.on('new:paper', (paper) => { mk_markers(paper); });

@@ -12,9 +12,13 @@ module.exports = (env, argv) => {
     return {
         entry: "./src/client/index.js",
         devtool: "source-map",
+        experiments: {
+            outputModule: true
+        },
         output: {
             path: path.join(__dirname, outputDirectory),
-            filename: "bundle.js"
+            filename: "bundle.js",
+            module: true
         },
         module: {
             rules: [
@@ -67,7 +71,8 @@ module.exports = (env, argv) => {
             new CleanWebpackPlugin(),
             new HtmlWebpackPlugin({
                 template: "./public/index.html",
-                inject: 'head'
+                inject: 'head',
+                scriptLoading: 'module'
     //            favicon: "./public/favicon.ico"
             }),
             new HtmlWebpackInlineSVGPlugin(),
