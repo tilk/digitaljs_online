@@ -500,7 +500,8 @@ function runquery() {
     });
 }
 
-$('button[type=submit]').click(e => {
+$('button[name=synthesize-btn]').click(e => {
+	console.log('xd');
     e.preventDefault();
     $('#synthesize-bar .query-alert').removeClass('fade').alert('close');
     $('form').find('input, textarea, button, select').prop('disabled', true);
@@ -516,6 +517,11 @@ $('button[type=submit]').click(e => {
     if (filenum == 0) runquery();
 
     openTab(circuitTabClass);
+});
+
+$('button[name=synthesize-wasm-btn]').on('click', e => {
+    e.preventDefault();
+    alert('WASM synthesis is not available in this online version.');
 });
 
 $('button[name=pause]').click(e => {
