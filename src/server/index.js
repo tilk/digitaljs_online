@@ -1,7 +1,8 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const app = express();
-const yosys2digitaljs = require('yosys2digitaljs');
+const { process_files } = require('yosys2digitaljs/node');
+const { io_ui } = require('yosys2digitaljs/core');
 const sqlite = require('sqlite');
 const sqlite3 = require('sqlite3');
 const SQL = require('sql-template-strings');
@@ -15,8 +16,8 @@ Promise.resolve((async () => {
 
     app.post('/api/yosys2digitaljs', async (req, res) => {
         try {
-            const data = await yosys2digitaljs.process_files(req.body.files, req.body.options);
-            yosys2digitaljs.io_ui(data.output);
+            const data = await process_files(req.body.files, req.body.options);
+            io_ui(data.output);
             return res.json(data);
         } catch(ret) {
             return res.status(500).json({

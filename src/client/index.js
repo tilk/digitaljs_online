@@ -11,12 +11,13 @@ import 'codemirror/lib/codemirror.css';
 import 'codemirror/addon/lint/lint.css';
 import 'bootstrap/js/src/tab.js';
 import CodeMirror from 'codemirror/lib/codemirror';
-import $ from 'jquery';
+import $, { get } from 'jquery';
 import * as digitaljs from 'digitaljs';
 import * as digitaljs_lua from 'digitaljs_lua';
 import Split from 'split-grid';
 import { saveAs } from 'file-saver';
-import { runYosys } from 'https://cdn.jsdelivr.net/npm/@yowasp/yosys/gen/bundle.js';
+import { runYosys, Exit } from 'https://cdn.jsdelivr.net/npm/@yowasp/yosys/gen/bundle.js';
+const { yosys2digitaljs, io_ui } = require('yosys2digitaljs/core');
 
 runYosys(["--version"]);
 
@@ -457,9 +458,10 @@ function postSynthesis(circuit, lint) {
 
     mkcircuit(transform ? digitaljs.transform.transformCircuit(circuit) : circuit, {layoutEngine: layoutEngine, engine: engines[simEngine]});
     updateLint(lint);
+	openTab(circuitTabClass);
 }
 
-function synthesize(useWasm, onSuccess) {
+function synthesize(useWasm, onSuccess, onError) {
     const data = {};
     for (const [name, editor] of Object.entries(editors)) {
         const panel = $('#'+name);
@@ -498,21 +500,71 @@ function synthesize(useWasm, onSuccess) {
                 onSuccess(circuit, lint);
             },
             error: (request, status, error) => {
-                loading = false;
-                updatebuttons();
-                $('form').find('input, textarea, button, select').prop('disabled', false);
-                $('<div class="query-alert alert alert-danger alert-dismissible fade show" role="alert"></div>')
-                    .append('<button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>')
-                    .append(document.createTextNode(request.responseJSON.error))
-                    .append($("<pre>").text(request.responseJSON.yosys_stderr.trim()))
-                    .appendTo($('#toolbar'))
-                    .alert();
+				onError(request.responseJSON.error, request.responseJSON.yosys_stderr.trim());
             }
         });
     } else {
+		console.log('USING WASM');
 
-    }
+		const readVerilogFilesScript = Object.keys(data)
+			.map(filename => `read_verilog -sv ${filename}`)
+			.join('\n');
 
+		console.log(readVerilogFilesScript)
+
+		const yosysPseudoFileName = 'script.ys'
+		const yosysOutputPseudoFileName = 'output.json';
+		const yosysScript = `
+${readVerilogFilesScript}
+hierarchy -auto-top
+proc
+opt
+write_json output.json
+`;
+		data[yosysPseudoFileName] = yosysScript;
+
+		console.log(data);
+
+		let stderr = {
+			chunks: [],
+			totalLength: 0,
+			getString: function() {
+				const result = new Uint8Array(this.totalLength);
+      			let offset = 0;
+      			for (const chunk of this.chunks) {
+        			result.set(chunk, offset);
+        			offset += chunk.length;
+      			}
+				return new TextDecoder().decode(result);
+			}
+		};
+
+		const runYosysOpts = {
+			stdout: (_) => {},
+			stderr: (bytes) => {
+				if (bytes !== null) {
+					stderr.chunks.push(bytes);
+					stderr.totalLength += bytes.length;
+				}
+			}
+		};
+
+		runYosys(['-s', yosysPseudoFileName], data, runYosysOpts).then(respData => {
+			const yosysOutput = JSON.parse(respData[yosysOutputPseudoFileName]);
+			const circuit = yosys2digitaljs(yosysOutput, {});
+			io_ui(circuit);
+			const lint = [];
+			onSuccess(circuit, lint);
+		}).catch(err => {
+			let message = "";
+			if (err instanceof Exit) {
+                message = "Yosys failed with code " + err.code;
+			} else {
+				message = err.toString();
+			}
+			onError(message, stderr.getString().trim());
+		})
+	}
 }
 
 function prepareFilesForSynthesis(onFilesReady) {
@@ -528,15 +580,23 @@ function prepareFilesForSynthesis(onFilesReady) {
         reader.readAsText(file);
     }
     if (filenum == 0) onFilesReady();
-
-    openTab(circuitTabClass);
 }
 
 function synthesizeAndRun(useWasm) {
     prepareFilesForSynthesis(() => {
         synthesize(useWasm, (circuit, lint) => {
             postSynthesis(circuit, lint);
-        });
+        }, (errorTitle, details) => {
+			loading = false;
+			updatebuttons();
+			$('form').find('input, textarea, button, select').prop('disabled', false);
+			$('<div class="query-alert alert alert-danger alert-dismissible fade show" role="alert"></div>')
+				.append('<button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>')
+				.append(document.createTextNode(errorTitle))
+				.append($("<pre>").text(details))
+				.appendTo($('#toolbar'))
+				.alert();
+		});
     });
 }
 
