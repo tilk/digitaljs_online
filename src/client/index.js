@@ -17,9 +17,16 @@ import * as digitaljs_lua from 'digitaljs_lua';
 import Split from 'split-grid';
 import { saveAs } from 'file-saver';
 import { runYosys, Exit } from 'https://cdn.jsdelivr.net/npm/@yowasp/yosys/gen/bundle.js';
-const { yosys2digitaljs, io_ui } = require('yosys2digitaljs/core');
+import * as yosys2digitaljs from 'yosys2digitaljs/core';
 
-runYosys(["--version"]);
+let yosysWorker = null;
+function setupNewYosysWorker() {
+	if (yosysWorker !== null) {
+		yosysWorker.terminate();
+	}
+	yosysWorker = new Worker(new URL("worker.js", import.meta.url), {type: 'module'});
+	return yosysWorker;
+}
 
 const examples = [
     ['sr_gate', 'SR latch'],
@@ -506,64 +513,25 @@ function synthesize(useWasm, onSuccess, onError) {
     } else {
 		console.log('USING WASM');
 
-		const readVerilogFilesScript = Object.keys(data)
-			.map(filename => `read_verilog -sv ${filename}`)
-			.join('\n');
-
-		console.log(readVerilogFilesScript)
-
-		const yosysPseudoFileName = 'script.ys'
-		const yosysOutputPseudoFileName = 'output.json';
-		const yosysScript = `
-${readVerilogFilesScript}
-hierarchy -auto-top
-proc
-opt
-write_json output.json
-`;
-		data[yosysPseudoFileName] = yosysScript;
-
-		console.log(data);
-
-		let stderr = {
-			chunks: [],
-			totalLength: 0,
-			getString: function() {
-				const result = new Uint8Array(this.totalLength);
-      			let offset = 0;
-      			for (const chunk of this.chunks) {
-        			result.set(chunk, offset);
-        			offset += chunk.length;
-      			}
-				return new TextDecoder().decode(result);
-			}
-		};
-
-		const runYosysOpts = {
-			stdout: (_) => {},
-			stderr: (bytes) => {
-				if (bytes !== null) {
-					stderr.chunks.push(bytes);
-					stderr.totalLength += bytes.length;
+		yosysWorker = yosysWorker ?? new Worker(new URL("worker.js", import.meta.url), {type: 'module'});
+		yosysWorker.onmessage = function(e) {
+			if (e.data.type === 'result') {
+				console.log('[Main] Received result', e.data);
+				try {
+					const circuit = yosys2digitaljs.yosys2digitaljs(e.data.output, {});
+					yosys2digitaljs.io_ui(circuit);
+					onSuccess(circuit, []);
+				} catch (err) {
+					onError('Failed to convert Yosys output to DigitalJS circuit', err.toString());
 				}
+			} else if (e.data.type === 'error') {
+				console.log('[Main] Received error', e.data);
+				onError(e.data.message, e.data.yosys_stderr);
+			} else {
+				console.log('[Main] Unknown message', e.data);
 			}
 		};
-
-		runYosys(['-s', yosysPseudoFileName], data, runYosysOpts).then(respData => {
-			const yosysOutput = JSON.parse(respData[yosysOutputPseudoFileName]);
-			const circuit = yosys2digitaljs(yosysOutput, {});
-			io_ui(circuit);
-			const lint = [];
-			onSuccess(circuit, lint);
-		}).catch(err => {
-			let message = "";
-			if (err instanceof Exit) {
-                message = "Yosys failed with code " + err.code;
-			} else {
-				message = err.toString();
-			}
-			onError(message, stderr.getString().trim());
-		})
+		yosysWorker.postMessage({type: 'synthesize', files: data, options: opts});
 	}
 }
 
