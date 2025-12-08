@@ -468,7 +468,7 @@ function postSynthesis(circuit, lint) {
 	openTab(circuitTabClass);
 }
 
-function synthesize(useWasm, onSuccess, onError) {
+function synthesize(onSuccess, onError) {
     const data = {};
     for (const [name, editor] of Object.entries(editors)) {
         const panel = $('#'+name);
@@ -494,50 +494,56 @@ function synthesize(useWasm, onSuccess, onError) {
     };
     destroycircuit();
 
-    if (!useWasm) {
-        $.ajax({
-            type: 'POST',
-            url: '/api/yosys2digitaljs',
-            contentType: "application/json",
-            data: JSON.stringify({ files: data, options: opts }),
-            dataType: 'json',
-            success: (responseData, status, xhr) => {
-                const circuit = responseData.output;
-                const lint = responseData.lint;
-                onSuccess(circuit, lint);
-            },
-            error: (request, status, error) => {
-				onError(request.responseJSON.error, request.responseJSON.yosys_stderr.trim(), []);
-            }
-        });
-    } else {
-		console.log('USING WASM');
+    const synthesisMode = $('#synthesis-mode').val();
 
-		yosysWorker = yosysWorker ?? new Worker(new URL("worker.js", import.meta.url), {type: 'module'});
-		yosysWorker.onmessage = function(e) {
-			if (e.data.type === 'finished') {
-				console.log('[Main] Worker finished');
-				const {lint, output} = e.data;
-				if (output.type === 'success') {
-					console.log('[Main] Synthesis success');
-					try {
-						const circuit = yosys2digitaljs.yosys2digitaljs(output.result, opts);
-						yosys2digitaljs.io_ui(circuit);
-						onSuccess(circuit, e.data.lint);
-					} catch (err) {
-						onError('Failed to convert Yosys output to DigitalJS circuit', err.toString(), lint);
-					}
-					return;
-				} else {
-					console.log('[Main] Synthesis failure');
-					onError(output.message, output.stderr, lint);
-				}
-			} else {
-				console.log('[Main] Unknown message', e.data);
-			}
-		};
-		yosysWorker.postMessage({type: 'synthesizeAndLint', files: data, options: opts});
-	}
+    const synthesisStrategies = {
+        wasm: (data, opts) => {
+            yosysWorker = yosysWorker ?? new Worker(new URL("worker.js", import.meta.url), {type: 'module'});
+            yosysWorker.onmessage = function(e) {
+                if (e.data.type === 'finished') {
+                    console.log('[Main] Worker finished');
+                    const {lint, output} = e.data;
+                    if (output.type === 'success') {
+                        console.log('[Main] Synthesis success');
+                        try {
+                            const circuit = yosys2digitaljs.yosys2digitaljs(output.result, opts);
+                            yosys2digitaljs.io_ui(circuit);
+                            onSuccess(circuit, e.data.lint);
+                        } catch (err) {
+                            console.log('[Main] Conversion failure', err);
+                            onError('Failed to convert Yosys output to DigitalJS circuit', err.toString(), lint);
+                        }
+                        return;
+                    } else {
+                        console.log('[Main] Synthesis failure');
+                        onError(output.message, output.stderr, lint);
+                    }
+                } else {
+                    console.log('[Main] Unknown message', e.data);
+                }
+            };
+            yosysWorker.postMessage({type: 'synthesizeAndLint', files: data, options: opts});
+        },
+        server: (data, opts) => {
+            $.ajax({
+                type: 'POST',
+                url: '/api/yosys2digitaljs',
+                contentType: "application/json",
+                data: JSON.stringify({ files: data, options: opts }),
+                dataType: 'json',
+                success: (responseData, status, xhr) => {
+                    const circuit = responseData.output;
+                    const lint = responseData.lint;
+                    onSuccess(circuit, lint);
+                },
+                error: (request, status, error) => {
+                    onError(request.responseJSON.error, request.responseJSON.yosys_stderr.trim(), []);
+                }
+            });
+        }
+    }
+
+    synthesisStrategies[synthesisMode](data, opts);
 }
 
 function prepareFilesForSynthesis(onFilesReady) {
@@ -555,9 +561,9 @@ function prepareFilesForSynthesis(onFilesReady) {
     if (filenum == 0) onFilesReady();
 }
 
-function synthesizeAndRun(useWasm) {
+function synthesizeAndRun() {
     prepareFilesForSynthesis(() => {
-        synthesize(useWasm, (circuit, lint) => {
+        synthesize((circuit, lint) => {
             postSynthesis(circuit, lint);
         }, (errorTitle, details, lint) => {
 			loading = false;
@@ -576,12 +582,7 @@ function synthesizeAndRun(useWasm) {
 
 $('button[name=synthesize-btn]').on('click', e => {
     e.preventDefault();
-    synthesizeAndRun(false);
-});
-
-$('button[name=synthesize-wasm-btn]').on('click', e => {
-    e.preventDefault();
-    synthesizeAndRun(true);
+    synthesizeAndRun();
 });
 
 $('button[name=pause]').click(e => {
