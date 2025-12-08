@@ -507,7 +507,7 @@ function synthesize(useWasm, onSuccess, onError) {
                 onSuccess(circuit, lint);
             },
             error: (request, status, error) => {
-				onError(request.responseJSON.error, request.responseJSON.yosys_stderr.trim());
+				onError(request.responseJSON.error, request.responseJSON.yosys_stderr.trim(), []);
             }
         });
     } else {
@@ -515,23 +515,28 @@ function synthesize(useWasm, onSuccess, onError) {
 
 		yosysWorker = yosysWorker ?? new Worker(new URL("worker.js", import.meta.url), {type: 'module'});
 		yosysWorker.onmessage = function(e) {
-			if (e.data.type === 'result') {
-				console.log('[Main] Received result', e.data);
-				try {
-					const circuit = yosys2digitaljs.yosys2digitaljs(e.data.output, {});
-					yosys2digitaljs.io_ui(circuit);
-					onSuccess(circuit, []);
-				} catch (err) {
-					onError('Failed to convert Yosys output to DigitalJS circuit', err.toString());
+			if (e.data.type === 'finished') {
+				console.log('[Main] Worker finished');
+				const {lint, output} = e.data;
+				if (output.type === 'success') {
+					console.log('[Main] Synthesis success');
+					try {
+						const circuit = yosys2digitaljs.yosys2digitaljs(output.result, opts);
+						yosys2digitaljs.io_ui(circuit);
+						onSuccess(circuit, e.data.lint);
+					} catch (err) {
+						onError('Failed to convert Yosys output to DigitalJS circuit', err.toString(), lint);
+					}
+					return;
+				} else {
+					console.log('[Main] Synthesis failure');
+					onError(output.message, output.stderr, lint);
 				}
-			} else if (e.data.type === 'error') {
-				console.log('[Main] Received error', e.data);
-				onError(e.data.message, e.data.yosys_stderr);
 			} else {
 				console.log('[Main] Unknown message', e.data);
 			}
 		};
-		yosysWorker.postMessage({type: 'synthesize', files: data, options: opts});
+		yosysWorker.postMessage({type: 'synthesizeAndLint', files: data, options: opts});
 	}
 }
 
@@ -554,9 +559,10 @@ function synthesizeAndRun(useWasm) {
     prepareFilesForSynthesis(() => {
         synthesize(useWasm, (circuit, lint) => {
             postSynthesis(circuit, lint);
-        }, (errorTitle, details) => {
+        }, (errorTitle, details, lint) => {
 			loading = false;
 			updatebuttons();
+			updateLint(lint);
 			$('form').find('input, textarea, button, select').prop('disabled', false);
 			$('<div class="query-alert alert alert-danger alert-dismissible fade show" role="alert"></div>')
 				.append('<button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>')
