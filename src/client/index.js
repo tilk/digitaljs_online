@@ -19,15 +19,6 @@ import { saveAs } from 'file-saver';
 import { runYosys, Exit } from 'https://cdn.jsdelivr.net/npm/@yowasp/yosys/gen/bundle.js';
 import * as yosys2digitaljs from 'yosys2digitaljs/core';
 
-let yosysWorker = null;
-function setupNewYosysWorker() {
-	if (yosysWorker !== null) {
-		yosysWorker.terminate();
-	}
-	yosysWorker = new Worker(new URL("worker.js", import.meta.url), {type: 'module'});
-	return yosysWorker;
-}
-
 const examples = [
     ['sr_gate', 'SR latch'],
     ['sr_neg_gate', 'SR latch (negated inputs)'],
@@ -352,7 +343,7 @@ function mkcircuit(data, opts) {
         lampMarkup: '<div class="form-check"><input type="checkbox"></input></div>',
         inputMarkup: '<input type="text" class="mr-2">'
     });
-	// TODO: ERROR IS HERE
+    // TODO: ERROR IS HERE
     paper = circuit.displayOn($('<div>').appendTo($('#paper')));
     mk_markers(paper);
     circuit.on('new:paper', (paper) => { mk_markers(paper); });
@@ -465,86 +456,103 @@ function postSynthesis(circuit, lint) {
 
     mkcircuit(transform ? digitaljs.transform.transformCircuit(circuit) : circuit, {layoutEngine: layoutEngine, engine: engines[simEngine]});
     updateLint(lint);
-	openTab(circuitTabClass);
+    openTab(circuitTabClass);
 }
 
-function synthesize(onSuccess, onError) {
-    const data = {};
-    for (const [name, editor] of Object.entries(editors)) {
-        const panel = $('#'+name);
-        data[panel.data("filename") + "." + panel.data("extension")] = editor.getValue();
-        editor._is_dirty = false;
-    }
-    for (const [filename, file] of Object.entries(filedata)) {
-        data[filename] = file.result;
-    }
-    if (Object.keys(data).length == 0) {
-        $('<div class="query-alert alert alert-danger alert-dismissible fade show" role="alert"></div>')
-            .append('<button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>')
-            .append(document.createTextNode("No source files for synthesis."))
-            .appendTo($('#toolbar'))
-            .alert();
-        return;
-    }
-    const opts = {
-        optimize: $('#opt').prop('checked'),
-        fsm: $('#fsm').val(),
-        fsmexpand: $('#fsmexpand').prop('checked'),
-        lint: $('#lint').prop('checked')
-    };
-    destroycircuit();
+const synthesize = (function() {
+    let yosysWorker = null;
 
-    const synthesisMode = $('#synthesis-mode').val();
-
-    const synthesisStrategies = {
-        wasm: (data, opts) => {
-            yosysWorker = yosysWorker ?? new Worker(new URL("worker.js", import.meta.url), {type: 'module'});
-            yosysWorker.onmessage = function(e) {
-                if (e.data.type === 'finished') {
-                    console.log('[Main] Worker finished');
-                    const {lint, output} = e.data;
-                    if (output.type === 'success') {
-                        console.log('[Main] Synthesis success');
-                        try {
-                            const circuit = yosys2digitaljs.yosys2digitaljs(output.result, opts);
-                            yosys2digitaljs.io_ui(circuit);
-                            onSuccess(circuit, e.data.lint);
-                        } catch (err) {
-                            console.log('[Main] Conversion failure', err);
-                            onError('Failed to convert Yosys output to DigitalJS circuit', err.toString(), lint);
-                        }
-                        return;
-                    } else {
-                        console.log('[Main] Synthesis failure');
-                        onError(output.message, output.stderr, lint);
-                    }
-                } else {
-                    console.log('[Main] Unknown message', e.data);
-                }
-            };
-            yosysWorker.postMessage({type: 'synthesizeAndLint', files: data, options: opts});
-        },
-        server: (data, opts) => {
-            $.ajax({
-                type: 'POST',
-                url: '/api/yosys2digitaljs',
-                contentType: "application/json",
-                data: JSON.stringify({ files: data, options: opts }),
-                dataType: 'json',
-                success: (responseData, status, xhr) => {
-                    const circuit = responseData.output;
-                    const lint = responseData.lint;
-                    onSuccess(circuit, lint);
-                },
-                error: (request, status, error) => {
-                    onError(request.responseJSON.error, request.responseJSON.yosys_stderr.trim(), []);
-                }
-            });
+    return function(onSuccess, onError) {
+        const data = {};
+        for (const [name, editor] of Object.entries(editors)) {
+            const panel = $('#' + name);
+            data[panel.data("filename") + "." + panel.data("extension")] = editor.getValue();
+            editor._is_dirty = false;
         }
-    }
+        for (const [filename, file] of Object.entries(filedata)) {
+            data[filename] = file.result;
+        }
+        if (Object.keys(data).length == 0) {
+            $('<div class="query-alert alert alert-danger alert-dismissible fade show" role="alert"></div>')
+                .append('<button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>')
+                .append(document.createTextNode("No source files for synthesis."))
+                .appendTo($('#toolbar'))
+                .alert();
+            return;
+        }
+        const opts = {
+            optimize: $('#opt').prop('checked'),
+            fsm: $('#fsm').val(),
+            fsmexpand: $('#fsmexpand').prop('checked'),
+            lint: $('#lint').prop('checked')
+        };
+        destroycircuit();
 
-    synthesisStrategies[synthesisMode](data, opts);
-}
+        const synthesisMode = $('#synthesis-mode').val();
+
+        const synthesisStrategies = {
+            wasm: (data, opts) => {
+                yosysWorker = yosysWorker ?? new Worker(new URL("worker.js", import.meta.url), {
+                    type: 'module'
+                });
+
+                yosysWorker.onmessage = function(e) {
+                    if (e.data.type === 'finished') {
+                        console.log('[Main] Worker finished');
+                        const {
+                            lint,
+                            output
+                        } = e.data;
+                        if (output.type === 'success') {
+                            console.log('[Main] Synthesis success');
+                            try {
+                                const circuit = yosys2digitaljs.yosys2digitaljs(output.result, opts);
+                                yosys2digitaljs.io_ui(circuit);
+                                onSuccess(circuit, e.data.lint);
+                            } catch (err) {
+                                console.log('[Main] Conversion failure', err);
+                                onError('Failed to convert Yosys output to DigitalJS circuit', err.toString(), lint);
+                            }
+                            return;
+                        } else {
+                            console.log('[Main] Synthesis failure');
+                            onError(output.message, output.stderr, lint);
+                        }
+                    } else {
+                        console.log('[Main] Unknown message', e.data);
+                    }
+                };
+                yosysWorker.postMessage({
+                    type: 'synthesizeAndLint',
+                    files: data,
+                    options: opts
+                });
+            },
+            server: (data, opts) => {
+                $.ajax({
+                    type: 'POST',
+                    url: '/api/yosys2digitaljs',
+                    contentType: "application/json",
+                    data: JSON.stringify({
+                        files: data,
+                        options: opts
+                    }),
+                    dataType: 'json',
+                    success: (responseData, status, xhr) => {
+                        const circuit = responseData.output;
+                        const lint = responseData.lint;
+                        onSuccess(circuit, lint);
+                    },
+                    error: (request, status, error) => {
+                        onError(request.responseJSON.error, request.responseJSON.yosys_stderr.trim(), []);
+                    }
+                });
+            }
+        }
+
+        synthesisStrategies[synthesisMode](data, opts);
+    };
+})();
 
 function prepareFilesForSynthesis(onFilesReady) {
     $('#synthesize-bar .query-alert').removeClass('fade').alert('close');
@@ -566,17 +574,17 @@ function synthesizeAndRun() {
         synthesize((circuit, lint) => {
             postSynthesis(circuit, lint);
         }, (errorTitle, details, lint) => {
-			loading = false;
-			updatebuttons();
-			updateLint(lint);
-			$('form').find('input, textarea, button, select').prop('disabled', false);
-			$('<div class="query-alert alert alert-danger alert-dismissible fade show" role="alert"></div>')
-				.append('<button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>')
-				.append(document.createTextNode(errorTitle))
-				.append($("<pre>").text(details))
-				.appendTo($('#toolbar'))
-				.alert();
-		});
+            loading = false;
+            updatebuttons();
+            updateLint(lint);
+            $('form').find('input, textarea, button, select').prop('disabled', false);
+            $('<div class="query-alert alert alert-danger alert-dismissible fade show" role="alert"></div>')
+                .append('<button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>')
+                .append(document.createTextNode(errorTitle))
+                .append($("<pre>").text(details))
+                .appendTo($('#toolbar'))
+                .alert();
+        });
     });
 }
 

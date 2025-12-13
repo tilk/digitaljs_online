@@ -1,51 +1,79 @@
 import { runYosys, Exit as YosysExit } from 'https://cdn.jsdelivr.net/npm/@yowasp/yosys/gen/bundle.js';
-import { loadVerilator, getWASMMemory, moduleInstFn } from './verilator-loader.js';
+import { loadVerilator, getWASMMemory, getVerilatorGlue, moduleInstFn } from './verilator-loader.js';
+
+const YOSYS_FILES = {
+    SCRIPT: 'script.ys',
+    OUTPUT: 'output.json'
+};
 
 class StreamCollector {
-	constructor() {
-		this.chunks = [];
-		this.totalLength = 0;
-	}
-1
-	push(chunk) {
-		this.chunks.push(chunk);
-		this.totalLength += chunk.length;
-	}
+    constructor() {
+        this.chunks = [];
+        this.totalLength = 0;
+    }
 
-	toString() {
-		const result = new Uint8Array(this.totalLength);
-		let offset = 0;
-		for (const chunk of this.chunks) {
-			result.set(chunk, offset);
-			offset += chunk.length;
-		}
-		return new TextDecoder().decode(result);
-	}
+    push(chunk) {
+        this.chunks.push(chunk);
+        this.totalLength += chunk.length;
+    }
+
+    toString() {
+        const result = new Uint8Array(this.totalLength);
+        let offset = 0;
+        for (const chunk of this.chunks) {
+            result.set(chunk, offset);
+            offset += chunk.length;
+        }
+        return new TextDecoder().decode(result);
+    }
 }
 
 function pathBasename(path) {
-	const parts = path.split(/[\\/]/);
-	return parts[parts.length - 1];
+    const parts = path.split(/[\\/]/);
+    return parts[parts.length - 1];
 }
 
-const yosysPseudoFileName = 'script.ys'
-const yosysOutputPseudoFileName = 'output.json';
+
+function loadYosysRuntime() {
+    const opts = {
+        fetchProgress: () => {},
+        stdout: data => {},
+        stderr: data => {},
+        synchronously: false
+    }
+
+    return runYosys([], {}, opts);
+}
+
+function loadVerilatorRuntime() {
+    return loadVerilator();
+}
+
+const initializationPromise = Promise.all([
+    loadYosysRuntime(),
+    loadVerilatorRuntime()
+]).then(() => {
+    console.log('[Worker] Environment ready (Yosys + Verilator)');
+}).catch(err => {
+    console.error('[Worker] Initialization failed', err);
+});
+
 
 function prepareYosysScript(files, options) {
-		console.log('[Worker] Preparing Yosys script for files', Object.keys(files), 'with options', options);
+    console.log('[Worker] Preparing Yosys script for files', Object.keys(files), 'with options', options);
 
-		const optimize_simp = options.optimize ? "opt" : "opt_clean";
-		const optimize = options.optimize ? "; opt -full" : "; opt_clean";
-		const fsmexpand = options.fsmexpand ? " -expand" : "";
-		const fsmpass = options.fsm == "nomap" ? "; fsm -nomap" + fsmexpand
-					: options.fsm ? "; fsm" + fsmexpand
-					: "";
+    const optimize_simp = options.optimize ? "opt" : "opt_clean";
+    const optimize = options.optimize ? "; opt -full" : "; opt_clean";
+    const fsmexpand = options.fsmexpand ? " -expand" : "";
+    const fsmpass = options.fsm == "nomap" ? "; fsm -nomap" + fsmexpand
+                : options.fsm ? "; fsm" + fsmexpand
+                : "";
 
-		const readVerilogFilesScript = Object.keys(files)
-			.map(filename => `read_verilog -sv ${filename}`)
-			.join('\n');
+    const readVerilogFilesScript = Object.keys(files)
+        .map(filename => `read_verilog -sv ${filename}`)
+        .join('\n');
 
-		const yosysScript = `
+    const yosysScript = `
 ${readVerilogFilesScript}
 hierarchy -auto-top
 proc
@@ -54,130 +82,125 @@ ${fsmpass}
 memory -nomap
 wreduce -memx
 ${optimize}
-write_json ${yosysOutputPseudoFileName}
+write_json ${YOSYS_FILES.OUTPUT}
 `;
-		return yosysScript;
+    return yosysScript;
 }
 
-const yosysPromise = runYosys().then(() => {
-	console.log('[Worker] Preloaded Yosys');
-});
-
-const verilatorPromise = loadVerilator().then(() => {
-	console.log('[Worker] Loaded Verilator WASM');
-});
-
 async function runYosysOnFiles(files, options) {
-	const stdoutCollector = new StreamCollector();
-	const stderrCollector = new StreamCollector();
+    const stdoutCollector = new StreamCollector();
+    const stderrCollector = new StreamCollector();
 
-	try {
-		const synthesisFiles = {
-			...files,
-			[yosysPseudoFileName]: prepareYosysScript(files, options),
-		}
+    try {
+        const synthesisFiles = {
+            ...files,
+            [YOSYS_FILES.SCRIPT]: prepareYosysScript(files, options),
+        }
 
-		console.log('[Worker] Running Yosys on files', synthesisFiles);
-
-		await yosysPromise;
-		const result = runYosys(['-s', yosysPseudoFileName], synthesisFiles, {
-			stdout: data => data ? stdoutCollector.push(data) : null,
-			stderr: data => data ? stderrCollector.push(data) : null,
-			synchronously: true,
-		});
-		console.log('[Worker] Yosys finished', result);
-		const yosysJson = JSON.parse(result[yosysOutputPseudoFileName]);
-		return [0, yosysJson, stdoutCollector.toString(), stderrCollector.toString()];
-	} catch (e) {
-		if (e instanceof YosysExit) {
-			return [e.code, {}, stdoutCollector.toString(), stderrCollector.toString()];
-		} else {
-			throw e;
-		}
-	}
+        console.log('[Worker] Running Yosys on files', synthesisFiles);
+        const result = runYosys(['-s', YOSYS_FILES.SCRIPT], synthesisFiles, {
+            stdout: data => data ? stdoutCollector.push(data) : null,
+            stderr: data => data ? stderrCollector.push(data) : null,
+            synchronously: true,
+        });
+        console.log('[Worker] Yosys finished', result);
+        const yosysJson = JSON.parse(result[YOSYS_FILES.OUTPUT]);
+        return [0, yosysJson, stdoutCollector.toString(), stderrCollector.toString()];
+    } catch (e) {
+        if (e instanceof YosysExit) {
+            return [e.code, {}, stdoutCollector.toString(), stderrCollector.toString()];
+        } else {
+            throw e;
+        }
+    }
 }
 
 async function runVerilatorOnFiles(files) {
-	try {
-		const stdoutCollector = [];
-		const stderrCollector = [];
+    try {
+        const stdoutCollector = [];
+        const stderrCollector = [];
 
-		await verilatorPromise;
+        const verilatorFactory = getVerilatorGlue();
 
-		let verilator_mod = self.verilator_bin({
-			instantiateWasm: moduleInstFn(),
-			noInitialRun: true,
-			noExitRuntime: true,
-			print: (s) => { stdoutCollector.push(s); },
-			printErr: (s) => { stderrCollector.push(s); },
-			wasmMemory: getWASMMemory(),
-		});
+        const verilatorMod = verilatorFactory({
+            instantiateWasm: moduleInstFn(),
+            noInitialRun: true,
+            noExitRuntime: true,
+            print: (s) => { stdoutCollector.push(s); },
+            printErr: (s) => { stderrCollector.push(s); },
+            wasmMemory: getWASMMemory(),
+        });
 
-		const filenames = Object.keys(files);
+        const filenames = Object.keys(files);
 
-		filenames.forEach((filename) => {
-			verilator_mod.FS.writeFile(filename, files[filename]);
-		});
+        filenames.forEach((filename) => {
+            verilatorMod.FS.writeFile(filename, files[filename]);
+        });
 
-		const args = ['--lint-only', '--Wall', '-Wno-DECLFILENAME', '-Wno-UNOPT', '-Wno-UNOPTFLAT'].concat(filenames);
-		const mainFn = verilator_mod.callMain || verilator_mod.run;
-		mainFn(args);
+        const args = ['--lint-only', '--Wall', '-Wno-DECLFILENAME', '-Wno-UNOPT', '-Wno-UNOPTFLAT'].concat(filenames);
+        const mainFn = verilatorMod.callMain || verilatorMod.run;
+        mainFn(args);
 
-		const lintLines = stderrCollector.length > 0 ? stderrCollector.slice(0, -1) : [];
-		const verilator_re = /^%(Warning|Error)[^:]*: ([^:]*):([0-9]+):([0-9]+): (.*)$/;
+        const lintLines = stderrCollector.length > 0 ? stderrCollector.slice(0, -1) : [];
+        const verilator_re = /^%(Warning|Error)[^:]*: ([^:]*):([0-9]+):([0-9]+): (.*)$/;
 
-		const lint = lintLines
-			.map(line => line.match(verilator_re))
-			.filter(result => result != null)
-			.map(result => {
-				return {
-					type: result[1],
-					file: pathBasename(result[2]),
-					line: Number(result[3]),
-					column: Number(result[4]),
-					message: result[5]
-				}
-			});
+        const lint = lintLines
+            .map(line => line.match(verilator_re))
+            .filter(result => result != null)
+            .map(result => {
+                return {
+                    type: result[1],
+                    file: pathBasename(result[2]),
+                    line: Number(result[3]),
+                    column: Number(result[4]),
+                    message: result[5]
+                }
+            });
 
-		return lint;
-	} catch (e) {
-		console.error('[Worker] Verilator linting failed', e);
-		return [];
-	}
+        return lint;
+    } catch (e) {
+        console.error('[Worker] Verilator linting failed', e);
+        return [];
+    }
 }
 
 self.onmessage = async (e) => {
-	console.log('[Worker] Received', e.data);
+    console.log('[Worker] Received', e.data);
 
-	const {type, files, options} = e.data;
+    const {type, files, options} = e.data;
 
-	if (type === 'synthesizeAndLint') {
+    if (type === 'synthesizeAndLint') {
+        try {
+            await initializationPromise;
 
-		const lintPromise = options.lint ? runVerilatorOnFiles(files) : Promise.resolve([]);
+            const lintPromise = options.lint ? runVerilatorOnFiles(files) : Promise.resolve([]);
+            const synthesisPromise = runYosysOnFiles(files, options);
 
-		const lint = await lintPromise;
-		const [yosysExit, yosysResult, ystdout, ystderr] = await runYosysOnFiles(e.data.files, e.data.options);
+            const [lint, [yosysExit, yosysResult, ystdout, ystderr]] = await Promise.all([lintPromise, synthesisPromise]);
 
+            const synthesisResult = yosysExit === 0
+            ? {
+                type: 'success',
+                result: yosysResult
+            } : {
+                type: 'failure',
+                message: 'Yosys synthesis failed',
+                exitCode: yosysExit,
+                stdout: ystdout,
+                stderr: ystderr
+            }
 
-		const synthesisResult = yosysExit === 0
-		  ? {
-			type: 'success',
-			result: yosysResult
-		} : {
-			type: 'failure',
-			message: 'Yosys synthesis failed',
-			exitCode: yosysExit,
-			stdout: ystdout,
-			stderr: ystderr
-		}
+            self.postMessage({type: 'finished', output: synthesisResult, lint: lint});
+        } catch (err) {
+            console.error('[Worker] Synthesis and linting failed', err);
+            self.postMessage({type: 'finished', output: {type: 'error', message: err.message || String(err)} , lint: []});
+        }
 
-		self.postMessage({type: 'finished', output: synthesisResult, lint: lint});
-
-	} else {
-		throw new Error(`[Worker] Unexpected message ${(e.data).type}`);
-	}
+    } else {
+        throw new Error(`[Worker] Unexpected message ${(e.data).type}`);
+    }
 }
 
 self.onerror = (event) => {
-	console.error('[Worker] Failure', event);
+    console.error('[Worker] Failure', event);
 };

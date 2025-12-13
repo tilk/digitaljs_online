@@ -1,65 +1,96 @@
-// Memory part
-let wasmMemory = null;
-export function getWASMMemory() {
-  if (wasmMemory === null) {
-    wasmMemory = new WebAssembly.Memory({
-      'initial': 1024,  // 64MB
-      'maximum': 16384, // 1024MB
-    });
-  }
-  return wasmMemory;
-}
+const MEMORY_CONFIG = {
+    initial: 1024,  // 64MB
+    maximum: 16384, // 1024MB
+};
 
+const FILES = {
+    WASM: 'verilator_bin.wasm',
+    GLUE: '/verilator_bin.js',
+};
 
-let verilatorLoaded = false;
-let verilatorBlob = null;
-export async function loadVerilatorWasmBinary() {
-	if (verilatorLoaded) return;
-	const url = 'verilator_bin.wasm';
-	const response = await fetch(url);
-    if (!response.ok) {
-      throw new Error(`Failed to load WASM file verilator_bin.wasm: ${response.status}`);
+class VerilatorManager {
+    constructor() {
+        this.memory = null;
+        this.moduleCache = null;
+        this.glueFn = null;
+
+        this.loadPromise = null;
     }
-    const buffer = await response.arrayBuffer();
-    verilatorBlob = new Uint8Array(buffer);
-    console.log(`Loaded verilator_bin.wasm (${verilatorBlob.length} bytes)`);
-    verilatorLoaded = true;
+
+    getMemory() {
+        if (!this.memory) {
+            this.memory = new WebAssembly.Memory(MEMORY_CONFIG);
+        }
+        return this.memory;
+    }
+
+    async load() {
+        if (this.moduleCache && this.glueFn) return;
+        if (this.loadPromise) return this.loadPromise;
+
+        this.loadPromise = Promise.all([
+            this._loadWasmModule(),
+            this._loadGlueCode()
+        ]).finally(() => {
+            this.loadPromise = null;
+        });
+
+        await this.loadPromise;
+    }
+
+    async _loadWasmModule() {
+        if (this.moduleCache) return;
+
+        const response = await fetch(FILES.WASM);
+        if (!response.ok) {
+            throw new Error(`Failed to load WASM file ${FILES.WASM}: ${response.status}`);
+        }
+
+        const buffer = await response.arrayBuffer();
+        this.moduleCache = await WebAssembly.compile(buffer);
+    }
+
+    async _loadGlueCode() {
+        if (this.glueFn) return;
+
+        const src = await fetch(FILES.GLUE).then(r => r.text());
+
+        this.glueFn = new Function(`${src}; return verilator_bin;`)();
+    }
+
+
+    getModuleInstantiator() {
+        return (imports, receiveInstanceCallback) => {
+            if (!this.moduleCache) {
+                throw new Error("Verilator WASM module not loaded. Call loadVerilator() first.");
+            }
+
+            const instance = new WebAssembly.Instance(this.moduleCache, imports);
+
+            receiveInstanceCallback(instance);
+            return instance.exports;
+        };
+    }
 }
 
-// hacky way to load verilator glue as it is not a module
-// we won't load it often anyway
-// separate linting worker should solve this issue
-async function loadVerilatorGlue() {
-  const src = await fetch('/verilator_bin.js').then(r => r.text());
-  self.verilator_bin = new Function(src + '; return verilator_bin;')();
+const verilatorManager = new VerilatorManager();
+
+export function getWASMMemory() {
+    return verilatorManager.getMemory();
 }
 
-export async function loadVerilator() {
-	if (verilatorLoaded) return;
-	await loadVerilatorGlue();
-	await loadVerilatorWasmBinary();
+export function loadVerilator() {
+    return verilatorManager.load();
 }
-
-// Verilator WASM module caching and creation part
-let verilator_wasm_cache = null;
-let CACHE_WASM_MODULES = true;
 
 export function getWASMModule() {
-  if (verilator_wasm_cache === null) {
-    const verilator_wasm = new WebAssembly.Module(verilatorBlob);
-    if (CACHE_WASM_MODULES) {
-      verilator_wasm_cache = verilator_wasm;
-    }
-	return verilator_wasm;
-  }
-  return verilator_wasm_cache;
+    return verilatorManager.moduleCache;
+}
+
+export function getVerilatorGlue() {
+  return verilatorManager.glueFn;
 }
 
 export function moduleInstFn() {
-  return function (imports, ri) {
-    let mod = getWASMModule();
-    let inst = new WebAssembly.Instance(mod, imports);
-    ri(inst);
-    return inst.exports;
-  }
+    return verilatorManager.getModuleInstantiator();
 }
