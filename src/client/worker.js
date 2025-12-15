@@ -60,8 +60,6 @@ const initializationPromise = Promise.all([
 
 
 function prepareYosysScript(files, options) {
-    console.log('[Worker] Preparing Yosys script for files', Object.keys(files), 'with options', options);
-
     const optimize_simp = options.optimize ? "opt" : "opt_clean";
     const optimize = options.optimize ? "; opt -full" : "; opt_clean";
     const fsmexpand = options.fsmexpand ? " -expand" : "";
@@ -97,13 +95,11 @@ async function runYosysOnFiles(files, options) {
             [YOSYS_FILES.SCRIPT]: prepareYosysScript(files, options),
         }
 
-        console.log('[Worker] Running Yosys on files', synthesisFiles);
         const result = runYosys(['-s', YOSYS_FILES.SCRIPT], synthesisFiles, {
             stdout: data => data ? stdoutCollector.push(data) : null,
             stderr: data => data ? stderrCollector.push(data) : null,
             synchronously: true,
         });
-        console.log('[Worker] Yosys finished', result);
         const yosysJson = JSON.parse(result[YOSYS_FILES.OUTPUT]);
         return [0, yosysJson, stdoutCollector.toString(), stderrCollector.toString()];
     } catch (e) {
@@ -159,14 +155,11 @@ async function runVerilatorOnFiles(files) {
 
         return lint;
     } catch (e) {
-        console.error('[Worker] Verilator linting failed', e);
         return [];
     }
 }
 
 self.onmessage = async (e) => {
-    console.log('[Worker] Received', e.data);
-
     const {type, files, options} = e.data;
 
     if (type === 'synthesizeAndLint') {
@@ -192,7 +185,6 @@ self.onmessage = async (e) => {
 
             self.postMessage({type: 'finished', output: synthesisResult, lint: lint});
         } catch (err) {
-            console.error('[Worker] Synthesis and linting failed', err);
             self.postMessage({type: 'finished', output: {type: 'error', message: err.message || String(err)} , lint: []});
         }
 

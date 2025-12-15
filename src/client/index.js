@@ -498,28 +498,22 @@ const synthesize = (function() {
 
                 yosysWorker.onmessage = function(e) {
                     if (e.data.type === 'finished') {
-                        console.log('[Main] Worker finished');
                         const {
                             lint,
                             output
                         } = e.data;
                         if (output.type === 'success') {
-                            console.log('[Main] Synthesis success');
                             try {
                                 const circuit = yosys2digitaljs.yosys2digitaljs(output.result, opts);
                                 yosys2digitaljs.io_ui(circuit);
                                 onSuccess(circuit, e.data.lint);
                             } catch (err) {
-                                console.log('[Main] Conversion failure', err);
                                 onError('Failed to convert Yosys output to DigitalJS circuit', err.toString(), lint);
                             }
                             return;
                         } else {
-                            console.log('[Main] Synthesis failure');
                             onError(output.message, output.stderr, lint);
                         }
-                    } else {
-                        console.log('[Main] Unknown message', e.data);
                     }
                 };
                 yosysWorker.postMessage({
