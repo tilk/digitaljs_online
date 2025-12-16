@@ -11,12 +11,11 @@ import 'codemirror/lib/codemirror.css';
 import 'codemirror/addon/lint/lint.css';
 import 'bootstrap/js/src/tab.js';
 import CodeMirror from 'codemirror/lib/codemirror';
-import $, { get } from 'jquery';
+import $ from 'jquery';
 import * as digitaljs from 'digitaljs';
 import * as digitaljs_lua from 'digitaljs_lua';
 import Split from 'split-grid';
 import { saveAs } from 'file-saver';
-import { runYosys, Exit } from 'https://cdn.jsdelivr.net/npm/@yowasp/yosys/gen/bundle.js';
 import * as yosys2digitaljs from 'yosys2digitaljs/core';
 
 const examples = [
@@ -343,7 +342,6 @@ function mkcircuit(data, opts) {
         lampMarkup: '<div class="form-check"><input type="checkbox"></input></div>',
         inputMarkup: '<input type="text" class="mr-2">'
     });
-    // TODO: ERROR IS HERE
     paper = circuit.displayOn($('<div>').appendTo($('#paper')));
     mk_markers(paper);
     circuit.on('new:paper', (paper) => { mk_markers(paper); });
@@ -454,132 +452,130 @@ function postSynthesis(circuit, lint) {
     const simEngine = $('#engine').val();
     const engines = { synch: digitaljs.engines.BrowserSynchEngine, worker: digitaljs.engines.WorkerEngine };
 
-    mkcircuit(transform ? digitaljs.transform.transformCircuit(circuit) : circuit, {layoutEngine: layoutEngine, engine: engines[simEngine]});
+    if (transform) digitaljs.transform.transformCircuit(circuit)
+    mkcircuit(transform, {layoutEngine: layoutEngine, engine: engines[simEngine]});
     updateLint(lint);
     openTab(circuitTabClass);
 }
 
-const synthesize = (function() {
-    let yosysWorker = null;
+function showSynthesisError(errorTitle, details, lint) {
+    loading = false;
+    updatebuttons();
+    updateLint(lint);
+    $('form').find('input, textarea, button, select').prop('disabled', false);
+    $('<div class="query-alert alert alert-danger alert-dismissible fade show" role="alert"></div>')
+        .append('<button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>')
+        .append(document.createTextNode(errorTitle))
+        .append($("<pre>").text(details))
+        .appendTo($('#toolbar'))
+        .alert();
+}
 
-    return function(onSuccess, onError) {
-        const data = {};
-        for (const [name, editor] of Object.entries(editors)) {
-            const panel = $('#' + name);
-            data[panel.data("filename") + "." + panel.data("extension")] = editor.getValue();
-            editor._is_dirty = false;
-        }
-        for (const [filename, file] of Object.entries(filedata)) {
-            data[filename] = file.result;
-        }
-        if (Object.keys(data).length == 0) {
-            $('<div class="query-alert alert alert-danger alert-dismissible fade show" role="alert"></div>')
-                .append('<button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>')
-                .append(document.createTextNode("No source files for synthesis."))
-                .appendTo($('#toolbar'))
-                .alert();
+let yosysWorker = null;
+function initYosysWorkerIfNeeded() {
+    if (yosysWorker !== null) return;
+
+    yosysWorker = new Worker('yosys_worker.js');
+    yosysWorker.onmessage = (e) => {
+        switch (e.data.type) {
+        case 'synthesisFinished':
+            const { lint, output } = e.data;
+            if (output.type === 'success') {
+                try {
+                    const circuit = yosys2digitaljs.yosys2digitaljs(output.result, opts);
+                    yosys2digitaljs.io_ui(circuit);
+                    postSynthesis(circuit, e.data.lint);
+                } catch (err) {
+                    showSynthesisError('Failed to convert Yosys output to DigitalJS circuit', err.toString(), lint);
+                }
+                return;
+            } else {
+                showSynthesisError(output.message, output.stderr, lint);
+            }
             return;
         }
-        const opts = {
-            optimize: $('#opt').prop('checked'),
-            fsm: $('#fsm').val(),
-            fsmexpand: $('#fsmexpand').prop('checked'),
-            lint: $('#lint').prop('checked')
-        };
-        destroycircuit();
+    }
+}
 
-        const synthesisMode = $('#synthesis-mode').val();
-
-        const synthesisStrategies = {
-            wasm: (data, opts) => {
-                yosysWorker = yosysWorker ?? new Worker(new URL("worker.js", import.meta.url), {
-                    type: 'module'
-                });
-
-                yosysWorker.onmessage = function(e) {
-                    if (e.data.type === 'finished') {
-                        const {
-                            lint,
-                            output
-                        } = e.data;
-                        if (output.type === 'success') {
-                            try {
-                                const circuit = yosys2digitaljs.yosys2digitaljs(output.result, opts);
-                                yosys2digitaljs.io_ui(circuit);
-                                onSuccess(circuit, e.data.lint);
-                            } catch (err) {
-                                onError('Failed to convert Yosys output to DigitalJS circuit', err.toString(), lint);
-                            }
-                            return;
-                        } else {
-                            onError(output.message, output.stderr, lint);
-                        }
-                    }
-                };
-                yosysWorker.postMessage({
-                    type: 'synthesizeAndLint',
-                    files: data,
-                    options: opts
-                });
+const synthesisStrategies = {
+    wasm: (data, opts) => {
+        initYosysWorkerIfNeeded();
+        yosysWorker.postMessage({
+            type: 'synthesizeAndLint',
+            files: data,
+            options: opts
+        });
+    },
+    server: (data, opts) => {
+        $.ajax({
+            type: 'POST',
+            url: '/api/yosys2digitaljs',
+            contentType: "application/json",
+            data: JSON.stringify({
+                files: data,
+                options: opts
+            }),
+            dataType: 'json',
+            success: (responseData, status, xhr) => {
+                const circuit = responseData.output;
+                const lint = responseData.lint;
+                postSynthesis(circuit, lint);
             },
-            server: (data, opts) => {
-                $.ajax({
-                    type: 'POST',
-                    url: '/api/yosys2digitaljs',
-                    contentType: "application/json",
-                    data: JSON.stringify({
-                        files: data,
-                        options: opts
-                    }),
-                    dataType: 'json',
-                    success: (responseData, status, xhr) => {
-                        const circuit = responseData.output;
-                        const lint = responseData.lint;
-                        onSuccess(circuit, lint);
-                    },
-                    error: (request, status, error) => {
-                        onError(request.responseJSON.error, request.responseJSON.yosys_stderr.trim(), []);
-                    }
-                });
+            error: (request, status, error) => {
+                showSynthesisError(request.responseJSON.error, request.responseJSON.yosys_stderr.trim(), []);
             }
-        }
+        });
+    }
+};
 
-        synthesisStrategies[synthesisMode](data, opts);
+function synthesize() {
+    const data = {};
+    for (const [name, editor] of Object.entries(editors)) {
+        const panel = $('#' + name);
+        data[panel.data("filename") + "." + panel.data("extension")] = editor.getValue();
+        editor._is_dirty = false;
+    }
+    for (const [filename, file] of Object.entries(filedata)) {
+        data[filename] = file.result;
+    }
+    if (Object.keys(data).length == 0) {
+        $('<div class="query-alert alert alert-danger alert-dismissible fade show" role="alert"></div>')
+            .append('<button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>')
+            .append(document.createTextNode("No source files for synthesis."))
+            .appendTo($('#toolbar'))
+            .alert();
+        return;
+    }
+    const opts = {
+        optimize: $('#opt').prop('checked'),
+        fsm: $('#fsm').val(),
+        fsmexpand: $('#fsmexpand').prop('checked'),
+        lint: $('#lint').prop('checked')
     };
-})();
+    destroycircuit();
 
-function prepareFilesForSynthesis(onFilesReady) {
-    $('#synthesize-bar .query-alert').removeClass('fade').alert('close');
-    $('form').find('input, textarea, button, select').prop('disabled', true);
+    const synthesisMode = $('#synthesis-mode').val();
+
+    synthesisStrategies[synthesisMode](data, opts);
+}
+
+function prepareFilesForSynthesis() {
     filedata = {};
     filenum = document.getElementById('files').files.length;
     for (const file of document.getElementById('files').files) {
         const reader = filedata[file.name] = new FileReader();
         reader.onload = x => {
-            if (--filenum == 0) onFilesReady();
+            if (--filenum == 0) synthesize();
         };
         reader.readAsText(file);
     }
-    if (filenum == 0) onFilesReady();
+    if (filenum == 0) synthesize();
 }
 
 function synthesizeAndRun() {
-    prepareFilesForSynthesis(() => {
-        synthesize((circuit, lint) => {
-            postSynthesis(circuit, lint);
-        }, (errorTitle, details, lint) => {
-            loading = false;
-            updatebuttons();
-            updateLint(lint);
-            $('form').find('input, textarea, button, select').prop('disabled', false);
-            $('<div class="query-alert alert alert-danger alert-dismissible fade show" role="alert"></div>')
-                .append('<button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>')
-                .append(document.createTextNode(errorTitle))
-                .append($("<pre>").text(details))
-                .appendTo($('#toolbar'))
-                .alert();
-        });
-    });
+    $('#synthesize-bar .query-alert').removeClass('fade').alert('close');
+    $('form').find('input, textarea, button, select').prop('disabled', true);
+    prepareFilesForSynthesis();
 }
 
 $('button[name=synthesize-btn]').on('click', e => {

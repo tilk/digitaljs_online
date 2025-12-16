@@ -183,9 +183,9 @@ self.onmessage = async (e) => {
                 stderr: ystderr
             }
 
-            self.postMessage({type: 'finished', output: synthesisResult, lint: lint});
+            self.postMessage({type: 'synthesisFinished', output: synthesisResult, lint: lint});
         } catch (err) {
-            self.postMessage({type: 'finished', output: {type: 'error', message: err.message || String(err)} , lint: []});
+            self.postMessage({type: 'synthesisFinished', output: {type: 'error', message: err.message || String(err)} , lint: []});
         }
 
     } else {
