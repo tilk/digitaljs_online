@@ -5,18 +5,17 @@ import 'bootstrap';
 import Droppable from 'droppable';
 import ClipboardJS from 'clipboard';
 import './scss/app.scss';
-import 'codemirror/mode/verilog/verilog';
-import 'codemirror/mode/lua/lua';
+import 'codemirror/mode/verilog/verilog.js';
+import 'codemirror/mode/lua/lua.js';
 import 'codemirror/lib/codemirror.css';
 import 'codemirror/addon/lint/lint.css';
 import 'bootstrap/js/src/tab.js';
-import CodeMirror from 'codemirror/lib/codemirror';
+import CodeMirror from 'codemirror/lib/codemirror.js';
 import $ from 'jquery';
 import * as digitaljs from 'digitaljs';
 import * as digitaljs_lua from 'digitaljs_lua';
 import Split from 'split-grid';
 import { saveAs } from 'file-saver';
-import * as yosys2digitaljs from 'yosys2digitaljs/core';
 
 const examples = [
     ['sr_gate', 'SR latch'],
@@ -453,10 +452,12 @@ function postSynthesis(circuit, lint) {
     const engines = { synch: digitaljs.engines.BrowserSynchEngine, worker: digitaljs.engines.WorkerEngine };
 
     if (transform) digitaljs.transform.transformCircuit(circuit)
-    mkcircuit(transform, {layoutEngine: layoutEngine, engine: engines[simEngine]});
+
+    mkcircuit(circuit, {layoutEngine: layoutEngine, engine: engines[simEngine]});
     updateLint(lint);
     openTab(circuitTabClass);
 }
+
 
 function showSynthesisError(errorTitle, details, lint) {
     loading = false;
@@ -475,16 +476,14 @@ let yosysWorker = null;
 function initYosysWorkerIfNeeded() {
     if (yosysWorker !== null) return;
 
-    yosysWorker = new Worker('yosys_worker.js');
+    yosysWorker = new Worker(new URL("./worker.js", import.meta.url), { type: 'module' });
     yosysWorker.onmessage = (e) => {
         switch (e.data.type) {
         case 'synthesisFinished':
             const { lint, output } = e.data;
             if (output.type === 'success') {
                 try {
-                    const circuit = yosys2digitaljs.yosys2digitaljs(output.result, opts);
-                    yosys2digitaljs.io_ui(circuit);
-                    postSynthesis(circuit, e.data.lint);
+                    postSynthesis(output.result, lint);
                 } catch (err) {
                     showSynthesisError('Failed to convert Yosys output to DigitalJS circuit', err.toString(), lint);
                 }

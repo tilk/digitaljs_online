@@ -3,6 +3,7 @@
   "version": "0.13.2",
   "description": "Online demonstration for DigitalJS",
   "main": "src/server/index.js",
+  "type": "module",
   "scripts": {
     "prepare": "npm run build",
     "start": "node src/server/index.js",
@@ -51,7 +52,7 @@
     "nodemon": "^2.0.15",
     "sass-loader": "^13.2.1",
     "style-loader": "^3.3.1",
-    "webpack": "^5.68.0",
+    "webpack": "^5.104.0",
     "webpack-cli": "^4.9.2",
     "webpack-dev-server": "^4.7.4"
   },

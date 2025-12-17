@@ -1,18 +1,18 @@
-const express = require('express');
-const bodyParser = require('body-parser');
+import express from 'express';
+import body_parser from 'body-parser';
 const app = express();
-const { process_files } = require('yosys2digitaljs/node');
-const { io_ui } = require('yosys2digitaljs/core');
-const sqlite = require('sqlite');
-const sqlite3 = require('sqlite3');
-const SQL = require('sql-template-strings');
-const sha256 = require('js-sha256');
+import { process_files } from 'yosys2digitaljs/node';
+import { io_ui } from 'yosys2digitaljs/core';
+import * as sqlite from 'sqlite';
+import sqlite3 from 'sqlite3';
+import SQL from 'sql-template-strings';
+import sha256 from 'js-sha256';
 
 Promise.resolve((async () => {
     const db = await sqlite.open({filename: './database.sqlite', driver: sqlite3.Database});
     await db.migrate(); // ({ force: 'last' });
 
-    app.use(bodyParser.json({limit: '50mb'}));
+    app.use(body_parser.json({limit: '50mb'}));
 
     app.post('/api/yosys2digitaljs', async (req, res) => {
         try {

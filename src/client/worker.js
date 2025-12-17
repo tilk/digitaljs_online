@@ -1,5 +1,6 @@
 import { runYosys, Exit as YosysExit } from 'https://cdn.jsdelivr.net/npm/@yowasp/yosys/gen/bundle.js';
 import { loadVerilator, getWASMMemory, getVerilatorGlue, moduleInstFn } from './verilator-loader.js';
+import { yosys2digitaljs, io_ui } from 'yosys2digitaljs/core';
 
 const YOSYS_FILES = {
     SCRIPT: 'script.ys',
@@ -171,10 +172,16 @@ self.onmessage = async (e) => {
 
             const [lint, [yosysExit, yosysResult, ystdout, ystderr]] = await Promise.all([lintPromise, synthesisPromise]);
 
+            let circuit = undefined;
+            if (yosysExit === 0) {
+                circuit = yosys2digitaljs(yosysResult, options);
+                io_ui(circuit);
+            }
+
             const synthesisResult = yosysExit === 0
             ? {
                 type: 'success',
-                result: yosysResult
+                result: circuit
             } : {
                 type: 'failure',
                 message: 'Yosys synthesis failed',
@@ -187,7 +194,6 @@ self.onmessage = async (e) => {
         } catch (err) {
             self.postMessage({type: 'synthesisFinished', output: {type: 'error', message: err.message || String(err)} , lint: []});
         }
-
     } else {
         throw new Error(`[Worker] Unexpected message ${(e.data).type}`);
     }
