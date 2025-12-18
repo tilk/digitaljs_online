@@ -1,11 +1,6 @@
 import { runYosys, Exit as YosysExit } from 'https://cdn.jsdelivr.net/npm/@yowasp/yosys/gen/bundle.js';
 import { loadVerilator, getWASMMemory, getVerilatorGlue, moduleInstFn } from './verilator-loader.js';
-import { yosys2digitaljs, io_ui } from 'yosys2digitaljs/core';
-
-const YOSYS_FILES = {
-    SCRIPT: 'script.ys',
-    OUTPUT: 'output.json'
-};
+import { yosys2digitaljs, io_ui, prepare_yosys_script, prepare_verilator_args } from 'yosys2digitaljs/core';
 
 class StreamCollector {
     constructor() {
@@ -59,49 +54,22 @@ const initializationPromise = Promise.all([
     console.error('[Worker] Initialization failed', err);
 });
 
-
-function prepareYosysScript(files, options) {
-    const optimize_simp = options.optimize ? "opt" : "opt_clean";
-    const optimize = options.optimize ? "; opt -full" : "; opt_clean";
-    const fsmexpand = options.fsmexpand ? " -expand" : "";
-    const fsmpass = options.fsm == "nomap" ? "; fsm -nomap" + fsmexpand
-                : options.fsm ? "; fsm" + fsmexpand
-                : "";
-
-    const readVerilogFilesScript = Object.keys(files)
-        .map(filename => `read_verilog -sv ${filename}`)
-        .join('\n');
-
-    const yosysScript = `
-${readVerilogFilesScript}
-hierarchy -auto-top
-proc
-${optimize_simp}
-${fsmpass}
-memory -nomap
-wreduce -memx
-${optimize}
-write_json ${YOSYS_FILES.OUTPUT}
-`;
-    return yosysScript;
-}
-
 async function runYosysOnFiles(files, options) {
+    const YOSYS_OUTPUT = 'output.json';
+
     const stdoutCollector = new StreamCollector();
     const stderrCollector = new StreamCollector();
 
     try {
-        const synthesisFiles = {
-            ...files,
-            [YOSYS_FILES.SCRIPT]: prepareYosysScript(files, options),
-        }
+        const filenames = Object.keys(files);
+        const yosysArgs = ['-p', prepare_yosys_script(filenames, options), '-o', YOSYS_OUTPUT];
 
-        const result = runYosys(['-s', YOSYS_FILES.SCRIPT], synthesisFiles, {
+        const result = runYosys(yosysArgs, files, {
             stdout: data => data ? stdoutCollector.push(data) : null,
             stderr: data => data ? stderrCollector.push(data) : null,
             synchronously: true,
         });
-        const yosysJson = JSON.parse(result[YOSYS_FILES.OUTPUT]);
+        const yosysJson = JSON.parse(result[YOSYS_OUTPUT]);
         return [0, yosysJson, stdoutCollector.toString(), stderrCollector.toString()];
     } catch (e) {
         if (e instanceof YosysExit) {
@@ -134,7 +102,7 @@ async function runVerilatorOnFiles(files) {
             verilatorMod.FS.writeFile(filename, files[filename]);
         });
 
-        const args = ['--lint-only', '--Wall', '-Wno-DECLFILENAME', '-Wno-UNOPT', '-Wno-UNOPTFLAT'].concat(filenames);
+        const args = prepare_verilator_args(filenames);
         const mainFn = verilatorMod.callMain || verilatorMod.run;
         mainFn(args);
 
@@ -156,6 +124,7 @@ async function runVerilatorOnFiles(files) {
 
         return lint;
     } catch (e) {
+        console.error('[Worker] Verilator linting failed', e);
         return [];
     }
 }
