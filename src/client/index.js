@@ -7,6 +7,7 @@ import ClipboardJS from 'clipboard';
 import './scss/app.scss';
 import 'codemirror/mode/verilog/verilog.js';
 import 'codemirror/mode/lua/lua.js';
+import 'codemirror/mode/python/python.js';
 import 'codemirror/lib/codemirror.css';
 import 'codemirror/addon/lint/lint.css';
 import 'bootstrap/js/src/tab.js';
@@ -183,25 +184,60 @@ function make_tab(filename, extension, content) {
                 helpers[name].stopThread(pid);
         });
     }
+
+    const editorSettings = {
+        v: { mode: { name: 'verilog' } },
+        sv: { mode: { name: 'verilog' } },
+        lua: { mode: { name: 'lua' } },
+        py: {
+            mode: { name: 'python' },
+            indentUnit: 4,
+            indentWithTabs: false,
+            smartIndent: true,
+            tabSize: 4
+        }
+    };
+
     const editor = CodeMirror.fromTextArea(ed_div[0], {
         lineNumbers: true,
-        mode: {
-            name: extension == 'v' || extension == 'sv' ? 'verilog' : 
-                  extension == 'lua' ? 'lua' : 'text'
-        },
-        gutters: ['CodeMirror-lint-markers']
+        mode: { name: 'text' },
+        gutters: ['CodeMirror-lint-markers'],
+        ...(editorSettings[extension])
     });
     editor._is_dirty = false;
     editor.on('changes', () => { editor._is_dirty = true; });
     editors[name] = editor;
 }
 
+function getDefaultContent(extension) {
+    if (extension === "v" || extension === "sv") {
+        return `// Write your modules here!
+module circuit();
+endmodule
+`
+    } else if (extension === 'py') {
+        return `from amaranth import *
+from amaranth.lib.wiring import In, Out, Component
+
+# Write your modules here!
+class Circuit(Component):
+    def __init__(self, limit):
+        super().__init__()
+
+
+    def elaborate(self, platform):
+        m = Module()
+        return m
+`;
+    } else {
+        return "";
+    }
+}
+
 $('#newtab').on('click', function (e) {
-    let filename = $('#start input[name=newtabname]').val() || 'unnamed';
+    const filename = $('#start input[name=newtabname]').val() || 'unnamed';
     const extension = $("#exten").data("extension");
-    let initial = "";
-    if (extension == "v" || extension == "sv")
-        initial = "// Write your modules here!\nmodule circuit();\nendmodule";
+    const initial = getDefaultContent(extension);
     make_tab(filename, extension, initial);
 });
 
