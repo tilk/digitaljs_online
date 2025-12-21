@@ -508,14 +508,14 @@ function showSynthesisError(errorTitle, details, lint) {
         .alert();
 }
 
-let yosysWorker = null;
-function initYosysWorkerIfNeeded() {
-    if (yosysWorker !== null) return;
+let worker = null;
+function getWorker() {
+    if (worker !== null) return worker;
 
-    yosysWorker = new Worker(new URL("./worker.js", import.meta.url), { type: 'module' });
-    yosysWorker.onmessage = (e) => {
-        switch (e.data.type) {
-        case 'synthesisFinished':
+    worker = new Worker(new URL("./worker.js", import.meta.url), { type: 'module' });
+    worker.onmessage = (e) => {
+        const messageType = e.data.type;
+        if (messageType === 'synthesisFinished') {
             const { lint, output } = e.data;
             if (output.type === 'success') {
                 try {
@@ -523,22 +523,34 @@ function initYosysWorkerIfNeeded() {
                 } catch (err) {
                     showSynthesisError('Failed to convert Yosys output to DigitalJS circuit', err.toString(), lint);
                 }
-                return;
             } else {
                 showSynthesisError(output.message, output.stderr, lint);
             }
-            return;
+        }
+        else if (messageType === 'pythonConversionFinished') {
+            const { output } = e.data;
+            console.log(e.data);
+            if (output.type === 'success') {
+                const { files } = output;
+                synthesize(files);
+            } else {
+                const { message, details } = output;
+                showSynthesisError(message, details, []);
+            }
         }
     }
+
+    return worker;
 }
 
 const synthesisStrategies = {
     wasm: (data, opts) => {
-        initYosysWorkerIfNeeded();
-        yosysWorker.postMessage({
+        getWorker().postMessage({
             type: 'synthesizeAndLint',
-            files: data,
-            options: opts
+            params: {
+                files: data,
+                options: opts
+            }
         });
     },
     server: (data, opts) => {
@@ -563,17 +575,8 @@ const synthesisStrategies = {
     }
 };
 
-function synthesize() {
-    const data = {};
-    for (const [name, editor] of Object.entries(editors)) {
-        const panel = $('#' + name);
-        data[panel.data("filename") + "." + panel.data("extension")] = editor.getValue();
-        editor._is_dirty = false;
-    }
-    for (const [filename, file] of Object.entries(filedata)) {
-        data[filename] = file.result;
-    }
-    if (Object.keys(data).length == 0) {
+function synthesize(files) {
+    if (Object.keys(files).length == 0) {
         $('<div class="query-alert alert alert-danger alert-dismissible fade show" role="alert"></div>')
             .append('<button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>')
             .append(document.createTextNode("No source files for synthesis."))
@@ -591,7 +594,32 @@ function synthesize() {
 
     const synthesisMode = $('#synthesis-mode').val();
 
-    synthesisStrategies[synthesisMode](data, opts);
+    synthesisStrategies[synthesisMode](files, opts);
+}
+
+function processFiles() {
+    const data = {};
+    for (const [name, editor] of Object.entries(editors)) {
+        const panel = $('#' + name);
+        data[panel.data("filename") + "." + panel.data("extension")] = editor.getValue();
+        editor._is_dirty = false;
+    }
+    for (const [filename, file] of Object.entries(filedata)) {
+        data[filename] = file.result;
+    }
+
+    const pythonConversionNeeded = Object.keys(data).some((name) => name.endsWith('.py'));
+
+    if (pythonConversionNeeded) {
+        getWorker().postMessage({
+            type: 'convertAmaranth',
+            params: {
+                files: data
+            }
+        });
+    } else {
+        synthesize(data);
+    }
 }
 
 function prepareFilesForSynthesis() {
@@ -600,11 +628,11 @@ function prepareFilesForSynthesis() {
     for (const file of document.getElementById('files').files) {
         const reader = filedata[file.name] = new FileReader();
         reader.onload = x => {
-            if (--filenum == 0) synthesize();
+            if (--filenum == 0) processFiles();
         };
         reader.readAsText(file);
     }
-    if (filenum == 0) synthesize();
+    if (filenum == 0) processFiles();
 }
 
 function synthesizeAndRun() {
