@@ -4,7 +4,7 @@ const MEMORY_CONFIG = {
 };
 
 const FILES = {
-    WASM: 'verilator_bin.wasm',
+    WASM: '/verilator_bin.wasm',
     GLUE: '/verilator_bin.js',
 };
 
@@ -52,12 +52,9 @@ class VerilatorManager {
 
     async _loadGlueCode() {
         if (this.glueFn) return;
-
-        const src = await fetch(FILES.GLUE).then(r => r.text());
-
-        this.glueFn = new Function(`${src}; return verilator_bin;`)();
+        const src = await import(/* webpackIgnore: true */ FILES.GLUE);
+        this.glueFn = src.default;
     }
-
 
     getModuleInstantiator() {
         return (imports, receiveInstanceCallback) => {
@@ -83,11 +80,7 @@ export function loadVerilator() {
     return verilatorManager.load();
 }
 
-export function getWASMModule() {
-    return verilatorManager.moduleCache;
-}
-
-export function getVerilatorGlue() {
+export function getVerilatorFactory() {
   return verilatorManager.glueFn;
 }
 

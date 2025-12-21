@@ -1,5 +1,5 @@
 import { runYosys, Exit as YosysExit } from 'https://cdn.jsdelivr.net/npm/@yowasp/yosys/gen/bundle.js';
-import { loadVerilator, getWASMMemory, getVerilatorGlue, moduleInstFn } from './verilator-loader.js';
+import { loadVerilator, getWASMMemory, getVerilatorFactory, moduleInstFn } from './verilator-loader.js';
 import { yosys2digitaljs, io_ui, prepare_yosys_script, prepare_verilator_args } from 'yosys2digitaljs/core';
 
 class StreamCollector {
@@ -28,7 +28,6 @@ function pathBasename(path) {
     const parts = path.split(/[\\/]/);
     return parts[parts.length - 1];
 }
-
 
 function loadYosysRuntime() {
     const opts = {
@@ -85,9 +84,8 @@ async function runVerilatorOnFiles(files) {
         const stdoutCollector = [];
         const stderrCollector = [];
 
-        const verilatorFactory = getVerilatorGlue();
-
-        const verilatorMod = verilatorFactory({
+        const verilatorFactory = getVerilatorFactory();
+        const verilator = await verilatorFactory({
             instantiateWasm: moduleInstFn(),
             noInitialRun: true,
             noExitRuntime: true,
@@ -99,12 +97,11 @@ async function runVerilatorOnFiles(files) {
         const filenames = Object.keys(files);
 
         filenames.forEach((filename) => {
-            verilatorMod.FS.writeFile(filename, files[filename]);
+            verilator.FS.writeFile(filename, files[filename]);
         });
 
         const args = prepare_verilator_args(filenames);
-        const mainFn = verilatorMod.callMain || verilatorMod.run;
-        mainFn(args);
+        verilator.callMain(args);
 
         const lintLines = stderrCollector.length > 0 ? stderrCollector.slice(0, -1) : [];
         const verilator_re = /^%(Warning|Error)[^:]*: ([^:]*):([0-9]+):([0-9]+): (.*)$/;
