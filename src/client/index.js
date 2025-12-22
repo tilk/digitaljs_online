@@ -5,12 +5,12 @@ import 'bootstrap';
 import Droppable from 'droppable';
 import ClipboardJS from 'clipboard';
 import './scss/app.scss';
-import 'codemirror/mode/verilog/verilog';
-import 'codemirror/mode/lua/lua';
+import 'codemirror/mode/verilog/verilog.js';
+import 'codemirror/mode/lua/lua.js';
 import 'codemirror/lib/codemirror.css';
 import 'codemirror/addon/lint/lint.css';
 import 'bootstrap/js/src/tab.js';
-import CodeMirror from 'codemirror/lib/codemirror';
+import CodeMirror from 'codemirror/lib/codemirror.js';
 import $ from 'jquery';
 import * as digitaljs from 'digitaljs';
 import * as digitaljs_lua from 'digitaljs_lua';
@@ -445,10 +445,92 @@ function updateLint(lint) {
     }
 }
 
-function runquery() {
+function postSynthesis(circuit, lint) {
+    const transform = $('#transform').prop('checked');
+    const layoutEngine = $('#layout').val();
+    const simEngine = $('#engine').val();
+    const engines = { synch: digitaljs.engines.BrowserSynchEngine, worker: digitaljs.engines.WorkerEngine };
+
+    if (transform) digitaljs.transform.transformCircuit(circuit)
+
+    mkcircuit(circuit, {layoutEngine: layoutEngine, engine: engines[simEngine]});
+    updateLint(lint);
+    openTab(circuitTabClass);
+}
+
+
+function showSynthesisError(errorTitle, details, lint) {
+    loading = false;
+    updatebuttons();
+    updateLint(lint);
+    $('form').find('input, textarea, button, select').prop('disabled', false);
+    $('<div class="query-alert alert alert-danger alert-dismissible fade show" role="alert"></div>')
+        .append('<button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>')
+        .append(document.createTextNode(errorTitle))
+        .append($("<pre>").text(details))
+        .appendTo($('#toolbar'))
+        .alert();
+}
+
+let yosysWorker = null;
+function initYosysWorkerIfNeeded() {
+    if (yosysWorker !== null) return;
+
+    yosysWorker = new Worker(new URL("./worker.js", import.meta.url), { type: 'module' });
+    yosysWorker.onmessage = (e) => {
+        switch (e.data.type) {
+        case 'synthesisFinished':
+            const { lint, output } = e.data;
+            if (output.type === 'success') {
+                try {
+                    postSynthesis(output.result, lint);
+                } catch (err) {
+                    showSynthesisError('Failed to convert Yosys output to DigitalJS circuit', err.toString(), lint);
+                }
+                return;
+            } else {
+                showSynthesisError(output.message, output.stderr, lint);
+            }
+            return;
+        }
+    }
+}
+
+const synthesisStrategies = {
+    wasm: (data, opts) => {
+        initYosysWorkerIfNeeded();
+        yosysWorker.postMessage({
+            type: 'synthesizeAndLint',
+            files: data,
+            options: opts
+        });
+    },
+    server: (data, opts) => {
+        $.ajax({
+            type: 'POST',
+            url: '/api/yosys2digitaljs',
+            contentType: "application/json",
+            data: JSON.stringify({
+                files: data,
+                options: opts
+            }),
+            dataType: 'json',
+            success: (responseData, status, xhr) => {
+                const circuit = responseData.output;
+                const lint = responseData.lint;
+                postSynthesis(circuit, lint);
+            },
+            error: (request, status, error) => {
+                showSynthesisError(request.responseJSON.error, request.responseJSON.yosys_stderr.trim(), []);
+            }
+        });
+    }
+};
+
+function synthesize() {
     const data = {};
     for (const [name, editor] of Object.entries(editors)) {
-        const panel = $('#'+name);
+        const panel = $('#' + name);
         data[panel.data("filename") + "." + panel.data("extension")] = editor.getValue();
         editor._is_dirty = false;
     }
@@ -469,53 +551,35 @@ function runquery() {
         fsmexpand: $('#fsmexpand').prop('checked'),
         lint: $('#lint').prop('checked')
     };
-    const transform = $('#transform').prop('checked');
-    const layoutEngine = $('#layout').val();
-    const simEngine = $('#engine').val();
     destroycircuit();
-    $.ajax({
-        type: 'POST',
-        url: '/api/yosys2digitaljs',
-        contentType: "application/json",
-        data: JSON.stringify({ files: data, options: opts }),
-        dataType: 'json',
-        success: (responseData, status, xhr) => {
-            let circuit = responseData.output;
-            if (transform) circuit = digitaljs.transform.transformCircuit(circuit);
-            const engines = { synch: digitaljs.engines.BrowserSynchEngine, worker: digitaljs.engines.WorkerEngine };
-            mkcircuit(circuit, {layoutEngine: layoutEngine, engine: engines[simEngine]});
-            updateLint(responseData.lint);
-        },
-        error: (request, status, error) => {
-            loading = false;
-            updatebuttons();
-            $('form').find('input, textarea, button, select').prop('disabled', false);
-            $('<div class="query-alert alert alert-danger alert-dismissible fade show" role="alert"></div>')
-                .append('<button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>')
-                .append(document.createTextNode(request.responseJSON.error))
-                .append($("<pre>").text(request.responseJSON.yosys_stderr.trim()))
-                .appendTo($('#toolbar'))
-                .alert();
-        }
-    });
+
+    const synthesisMode = $('#synthesis-mode').val();
+
+    synthesisStrategies[synthesisMode](data, opts);
 }
 
-$('button[type=submit]').click(e => {
-    e.preventDefault();
-    $('#synthesize-bar .query-alert').removeClass('fade').alert('close');
-    $('form').find('input, textarea, button, select').prop('disabled', true);
+function prepareFilesForSynthesis() {
     filedata = {};
     filenum = document.getElementById('files').files.length;
     for (const file of document.getElementById('files').files) {
         const reader = filedata[file.name] = new FileReader();
         reader.onload = x => {
-            if (--filenum == 0) runquery();
+            if (--filenum == 0) synthesize();
         };
         reader.readAsText(file);
     }
-    if (filenum == 0) runquery();
+    if (filenum == 0) synthesize();
+}
 
-    openTab(circuitTabClass);
+function synthesizeAndRun() {
+    $('#synthesize-bar .query-alert').removeClass('fade').alert('close');
+    $('form').find('input, textarea, button, select').prop('disabled', true);
+    prepareFilesForSynthesis();
+}
+
+$('button[name=synthesize-btn]').on('click', e => {
+    e.preventDefault();
+    synthesizeAndRun();
 });
 
 $('button[name=pause]').click(e => {

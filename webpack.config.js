@@ -1,21 +1,33 @@
-const path = require("path");
-const HtmlWebpackPlugin = require("html-webpack-plugin");
-const CleanWebpackPlugin = require("clean-webpack-plugin");
-const CopyWebpackPlugin = require('copy-webpack-plugin');
-const MiniCssExtractPlugin = require("mini-css-extract-plugin");
-const HtmlWebpackInlineSVGPlugin = require('html-webpack-inline-svg-plugin');
+import { join, dirname } from "path";
+import { fileURLToPath } from "url";
+import { createRequire } from "module";
+
+import HtmlWebpackPlugin from "html-webpack-plugin";
+import CleanWebpackPlugin from "clean-webpack-plugin";
+import CopyWebpackPlugin from 'copy-webpack-plugin';
+import MiniCssExtractPlugin from "mini-css-extract-plugin";
+import HtmlWebpackInlineSVGPlugin from 'html-webpack-inline-svg-plugin';
 
 const outputDirectory = "dist";
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const require = createRequire(import.meta.url);
 
-module.exports = (env, argv) => {
+export default (env, argv) => {
     const devMode = argv.mode !== "production";
     return {
         entry: "./src/client/index.js",
         devtool: "source-map",
-        output: {
-            path: path.join(__dirname, outputDirectory),
-            filename: "bundle.js"
+        experiments: {
+            outputModule: true
         },
+        output: {
+            path: join(__dirname, outputDirectory),
+            filename: "bundle.js",
+            module: true,
+            chunkFormat: "module",
+        },
+        target: "web",
         module: {
             rules: [
                 {
@@ -67,7 +79,8 @@ module.exports = (env, argv) => {
             new CleanWebpackPlugin(),
             new HtmlWebpackPlugin({
                 template: "./public/index.html",
-                inject: 'head'
+                inject: 'head',
+                scriptLoading: 'module'
     //            favicon: "./public/favicon.ico"
             }),
             new HtmlWebpackInlineSVGPlugin(),
@@ -78,6 +91,10 @@ module.exports = (env, argv) => {
                 ]
             })
         ].concat(devMode ? [] : [new MiniCssExtractPlugin()]),
+        optimization: {
+            splitChunks: false,
+            runtimeChunk: false,
+        }
     };
 };
 

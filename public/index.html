@@ -23,7 +23,7 @@
         <div class="mr-2 upper-toolbar-group digitaljs-logo" title="DigitalJS"></div>
         <div id="synthesize-bar">
           <form>
-            <button id="synthesize-btn" title="Synthesize and simulate!" type="submit" class="btn btn-primary">
+            <button name="synthesize-btn" title="Synthesize and simulate!" type="button" class="btn btn-primary">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"
                 stroke-linecap="round" stroke-linejoin="round" class="feather feather-play">
                 <polygon points="5 3 19 12 5 21 5 3"></polygon>
@@ -145,6 +145,14 @@
                   <select id="layout" class="form-control">
                     <option value="elkjs">ElkJS (more readable)</option>
                     <option value="dagre">Dagre (legacy)</option>
+                  </select>
+                </div>
+                <div class="form-group" data-bs-toggle="tooltip"
+                  title="Changes how the circuit is being synthesized.">
+                  <label for="synthesis-mode">Synthesis mode</label>
+                  <select id="synthesis-mode" class="form-control">
+                    <option value="wasm">WebAssembly (faster and local)</option>
+                    <option value="server">Server side (legacy, works with older browsers)</option>
                   </select>
                 </div>
                 <div class="form-group" data-bs-toggle="tooltip"
