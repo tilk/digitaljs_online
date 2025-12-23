@@ -617,10 +617,15 @@ function getAmaranthWorker() {
 }
 
 function processFiles() {
+    const synthesizableExtensions = new Set(['sv', 'v', 'vh', 'py']);
     const data = {};
     for (const [name, editor] of Object.entries(editors)) {
         const panel = $('#' + name);
-        data[panel.data("filename") + "." + panel.data("extension")] = editor.getValue();
+        const extension = panel.data("extension");
+
+        if (!synthesizableExtensions.has(extension)) continue;
+
+        data[panel.data("filename") + "." + extension] = editor.getValue();
         editor._is_dirty = false;
     }
     for (const [filename, file] of Object.entries(filedata)) {
