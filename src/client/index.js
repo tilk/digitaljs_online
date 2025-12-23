@@ -217,14 +217,24 @@ endmodule
 `
     } else if (extension === 'py') {
         return `from amaranth import *
-from amaranth.lib.wiring import In, Out, Component
+from amaranth.lib.wiring import Component, In, Out, Signature
+
+from digitaljs.utils import export, mod
+
 
 # Write your modules here!
 class Circuit(Component):
+    def __init__(self):
+        super().__init__(Signature({}))
 
     def elaborate(self, platform):
         m = Module()
         return m
+
+
+exports = export(
+    circuit=mod(Circuit())
+)
 `;
     } else {
         return "";

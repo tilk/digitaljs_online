@@ -88,21 +88,40 @@ def clear_module_cache(filenames):
                 del sys.modules[mod_name]
 `;
 
+const pythonUtils = `
+def mod(module, ports=None):
+    return (
+        {"module": module}
+        if ports is None
+        else {
+            "module": module,
+            "ports": ports,
+        }
+    )
+
+
+def export(**modules):
+    return modules
+`
+
 let pyodide = null;
 async function loadPythonEnviroment() {
     if (pyodide === null) {
         pyodide = await loadPyodide();
         await pyodide.loadPackage(pythonPackages);
 
+        pyodide.FS.mkdir("digitaljs");
+        pyodide.FS.writeFile('digitaljs/utils.py', pythonUtils);
+
         await pyodide.runPythonAsync(pythonHelperScript);
     }
     return pyodide;
 }
 
+const initializationPromise = loadPythonEnviroment();
 
-async function convertAmaranthToVerilog(pythonFiles) {
+async function convertAmaranthToRtlil(pythonFiles) {
     const filenames = Object.keys(pythonFiles);
-
     try {
         filenames.forEach((filename) => {
             pyodide.FS.writeFile(filename, pythonFiles[filename]);
@@ -136,8 +155,6 @@ async function convertAmaranthToVerilog(pythonFiles) {
     }
 }
 
-const initializationPromise = loadPythonEnviroment();
-
 self.onmessage = async (e) => {
     const {type, params } = e.data;
     if (type === 'convertAmaranth') {
@@ -155,7 +172,7 @@ self.onmessage = async (e) => {
             });
 
             await initializationPromise;
-            const convertedPythonFiles = await convertAmaranthToVerilog(pythonFiles);
+            const convertedPythonFiles = await convertAmaranthToRtlil(pythonFiles);
 
             const resultFiles = {...otherFiles, ...convertedPythonFiles};
             self.postMessage({type: 'pythonConversionFinished', output: {type: 'success', files: resultFiles}});
