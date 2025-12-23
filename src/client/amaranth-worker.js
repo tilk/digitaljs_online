@@ -112,13 +112,19 @@ def export(**modules):
 let pyodide = null;
 async function loadPythonEnviroment() {
     if (pyodide === null) {
-        pyodide = await loadPyodide();
-        await pyodide.loadPackage(pythonPackages);
+        console.log('[Amaranth Worker]: Loading enviroment...')
+        pyodide = await loadPyodide({
+            packages: pythonPackages,
+            stderr: (_) => {},
+            stdout: (_) => {}
+        });
 
         pyodide.FS.mkdir("digitaljs");
         pyodide.FS.writeFile('digitaljs/utils.py', pythonUtils);
 
         await pyodide.runPythonAsync(pythonHelperScript);
+
+        console.log('[Amaranth Worker]: Enviroment ready')
     }
     return pyodide;
 }
