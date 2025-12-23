@@ -54,16 +54,21 @@ def process_modules(filenames):
                         elif isinstance(exports, dict):      # dict of name -> module data
                             exported_rtlils = []
                             for name, obj in exports.items():
+                                module_instance = obj.get('module', None)
+                                if module_instance is None:
+                                    raise Exception(f"Malformed export entry for {name}. No module instance passed")
+
+                                ports = obj.get('ports', None)
+
                                 try:
-                                    module_instance = obj['module']
                                     exported = rtlil.convert(
                                         module_instance,
                                         name=name,
-                                        ports=obj.get('ports', None),
+                                        ports=ports,
                                     )
                                     exported_rtlils.append(exported)
                                 except Exception as e:
-                                    raise Exception(f"Malformed export entry for {name}. {e}")
+                                    raise Exception(f"Amaranth error. {e}")
                         else:
                             raise Exception(f"Unsupported exports type: {type(exports)}")
 

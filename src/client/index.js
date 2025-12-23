@@ -603,7 +603,6 @@ function getAmaranthWorker() {
         const messageType = e.data.type;
         if (messageType === 'pythonConversionFinished') {
             const { output } = e.data;
-            console.log(e.data);
             if (output.type === 'success') {
                 const { files } = output;
                 synthesize(files);
