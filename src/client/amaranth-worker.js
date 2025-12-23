@@ -1,5 +1,12 @@
 import { loadPyodide } from 'https://cdn.jsdelivr.net/pyodide/v0.29.0/full/pyodide.mjs';
 
+const rfc3986_2_0_0 = 'https://files.pythonhosted.org/packages/ff/9a/9afaade874b2fa6c752c36f1548f718b5b83af81ed9b76628329dab81c1b/rfc3986-2.0.0-py2.py3-none-any.whl';
+const jschon_0_11_1 = 'https://files.pythonhosted.org/packages/ce/b1/31f454a2ac0d23b0a47283d115f0af4abe2a1ea391f5ccb223e02d685b82/jschon-0.11.1-py3-none-any.whl';
+const pyvcd_0_4_1 = 'https://files.pythonhosted.org/packages/8d/6d/24f67ec6cbe90ffca470f3c31e24f3d21124abc5b690398ab34a54bd3070/pyvcd-0.4.1-py2.py3-none-any.whl';
+const amaranth_0_5_8 = 'https://files.pythonhosted.org/packages/74/4b/61caac0c0ba1934ed839ddfa35592e3cbc2a6762e829209df5e8adab4fda/amaranth-0.5.8-py3-none-any.whl';
+
+const pythonPackages = [rfc3986_2_0_0, jschon_0_11_1, pyvcd_0_4_1, amaranth_0_5_8];
+
 const pythonHelperScript = `
 import sys
 import os
@@ -85,13 +92,8 @@ let pyodide = null;
 async function loadPythonEnviroment() {
     if (pyodide === null) {
         pyodide = await loadPyodide();
+        await pyodide.loadPackage(pythonPackages);
 
-        // TODO: this takes quite a while, see if we can optimize it
-        // amaranth playground startup time is faster so there must be a way
-        await pyodide.loadPackage("micropip");
-        const micropip = pyodide.pyimport("micropip");
-
-        await micropip.install(["amaranth"]);
         await pyodide.runPythonAsync(pythonHelperScript);
     }
     return pyodide;
@@ -113,16 +115,14 @@ async function convertAmaranthToVerilog(pythonFiles) {
             throw new Error(resultProxy);
         }
 
-        const result = resultProxy.toJs();
+        const convertedIlFiles = resultProxy.toJs();
         resultProxy.destroy();
 
-        const convertedFiles = Object.entries(result)
-            .reduce((files, [filename, verilogList]) => {
-                files[filename.replace('.py', '.v')] = verilogList.join('\n');
-                return files;
-            }, {});
+        Object.keys(convertedIlFiles).forEach(filename => {
+            convertedIlFiles[filename] = convertedIlFiles[filename].join('\n');
+        })
 
-        return convertedFiles;
+        return convertedIlFiles;
     } finally {
         try {
             const clearFunc = pyodide.globals.get("clear_module_cache");
