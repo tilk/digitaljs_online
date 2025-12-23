@@ -221,9 +221,6 @@ from amaranth.lib.wiring import In, Out, Component
 
 # Write your modules here!
 class Circuit(Component):
-    def __init__(self, limit):
-        super().__init__()
-
 
     def elaborate(self, platform):
         m = Module()
@@ -527,17 +524,6 @@ function getWorker() {
                 showSynthesisError(output.message, output.stderr, lint);
             }
         }
-        else if (messageType === 'pythonConversionFinished') {
-            const { output } = e.data;
-            console.log(e.data);
-            if (output.type === 'success') {
-                const { files } = output;
-                synthesize(files);
-            } else {
-                const { message, details } = output;
-                showSynthesisError(message, details, []);
-            }
-        }
     }
 
     return worker;
@@ -597,6 +583,30 @@ function synthesize(files) {
     synthesisStrategies[synthesisMode](files, opts);
 }
 
+
+let amaranthWorker = null;
+function getAmaranthWorker() {
+    if (amaranthWorker !== null) return amaranthWorker;
+
+    amaranthWorker = new Worker(new URL("./amaranth-worker.js", import.meta.url), { type: 'module' });
+    amaranthWorker.onmessage = (e) => {
+        const messageType = e.data.type;
+        if (messageType === 'pythonConversionFinished') {
+            const { output } = e.data;
+            console.log(e.data);
+            if (output.type === 'success') {
+                const { files } = output;
+                synthesize(files);
+            } else {
+                const { message, details } = output;
+                showSynthesisError(message, details, []);
+            }
+        }
+    }
+
+    return amaranthWorker;
+}
+
 function processFiles() {
     const data = {};
     for (const [name, editor] of Object.entries(editors)) {
@@ -611,7 +621,7 @@ function processFiles() {
     const pythonConversionNeeded = Object.keys(data).some((name) => name.endsWith('.py'));
 
     if (pythonConversionNeeded) {
-        getWorker().postMessage({
+        getAmaranthWorker().postMessage({
             type: 'convertAmaranth',
             params: {
                 files: data
