@@ -11,102 +11,131 @@ const pythonHelperScript = `
 import sys
 import os
 import importlib.util
+from contextlib import contextmanager
 
 from amaranth.back import rtlil
 
+from digitaljs.utils import get_registry, clear_registry
+
+@contextmanager
+def add_path(path):
+    if path not in sys.path:
+        sys.path.insert(0, path)
+        yield
+        try:
+            sys.path.remove(path)
+        except ValueError:
+            pass
+    else:
+        yield
+
 def process_modules(filenames):
-    """
-    Executes a list of flat filenames (e.g. ['utils.py', 'top.py'])
-    Returns: { 'top.il': ['rtlil...'] } or single string when exception occurs
-    """
+    results = {}
 
     try:
-        # Ensure current dir is in sys.path
-        cwd = os.getcwd()
-        if cwd not in sys.path:
-            sys.path.insert(0, cwd)
+        with add_path(os.getcwd()):
+            for filename in filenames:
+                if not filename.endswith(".py"):
+                    continue
 
-        results = {}
+                module_name = filename[:-3]
+                output_filename = f'{module_name}.il'
 
-        for filename in filenames:
-            if not filename.endswith(".py"):
-                continue
+                clear_registry()
 
-            module_name = filename[:-3] # "utils.py" -> "utils"
-            output_filename = f'{module_name}.il'
-
-            try:
-                # Dynamic import
                 spec = importlib.util.spec_from_file_location(module_name, filename)
-                if spec and spec.loader:
-                    module = importlib.util.module_from_spec(spec)
-                    sys.modules[module_name] = module
-                    spec.loader.exec_module(module)
+                if not spec or not spec.loader:
+                    raise ImportError(f"Could not load {filename}")
 
-                    if hasattr(module, "exports"):
-                        exports = module.exports
-                        exported_rtlils = None
+                module = importlib.util.module_from_spec(spec)
+                sys.modules[module_name] = module
+                spec.loader.exec_module(module)
 
-                        if isinstance(exports, list):        # list of rtlil code strings
-                            exported_rtlils = [str(x) for x in res]
-                        elif isinstance(exports, str):       # single rtlil code string
-                            exported_rtlils = [str(res)]
-                        elif isinstance(exports, dict):      # dict of name -> module data
-                            exported_rtlils = []
-                            for name, obj in exports.items():
-                                module_instance = obj.get('module', None)
-                                if module_instance is None:
-                                    raise Exception(f"Malformed export entry for {name}. No module instance passed")
+                exports = get_registry()
 
-                                ports = obj.get('ports', None)
+                # Check for duplicate names
+                seen_names = set()
+                for entry in exports:
+                    name = entry['name']
+                    if name in seen_names:
+                        raise ValueError(f"Duplicate module name detected: '{name}'. Try to use the 'suffix' parameter of the @export decorator to disambiguate.")
+                    seen_names.add(name)
 
-                                try:
-                                    exported = rtlil.convert(
-                                        module_instance,
-                                        name=name,
-                                        ports=ports,
-                                    )
-                                    exported_rtlils.append(exported)
-                                except Exception as e:
-                                    raise Exception(f"Amaranth error. {e}")
-                        else:
-                            raise Exception(f"Unsupported exports type: {type(exports)}")
+                # Perform conversion
+                exported_rtlils = []
+                for entry in exports:
+                    target = entry['target']
+                    name = entry['name']
+                    kwargs = entry['kwargs']
+                    ports_setting = entry['ports']
 
-                        results[output_filename] = exported_rtlils
+                    instance = target(**kwargs)
 
-            except Exception as e:
-                raise Exception(f"Error processing {filename}: {e}")
+                    ports = ports_setting(instance) if callable(ports_setting) else ports_setting
 
+                    code = rtlil.convert(
+                        instance,
+                        name=name,
+                        ports=ports
+                    )
+                    exported_rtlils.append(code)
+
+                results[output_filename] = exported_rtlils
         return results
     except Exception as e:
         return str(e)
+    finally:
+        clear_module_cache(filenames)
 
 def clear_module_cache(filenames):
-    """
-    Removes the specific modules we just created from sys.modules
-    so the next run doesn't use stale code.
-    """
+    PROTECTED_MODULES = {'sys', 'os', 'math', 're', 'amaranth'}
+
     for filename in filenames:
         if filename.endswith(".py"):
             mod_name = filename[:-3]
-            if mod_name in sys.modules:
+
+            if mod_name in sys.modules and mod_name not in PROTECTED_MODULES:
                 del sys.modules[mod_name]
 `;
 
 const pythonUtils = `
-def mod(module, ports=None):
-    return (
-        {"module": module}
-        if ports is None
-        else {
-            "module": module,
+import inspect
+
+_registry = []
+
+def export(target=None, *, name=None, suffix=None, ports=None, **kwargs):
+    def wrapper(inner_target):
+        base_name = name or inner_target.__name__
+
+        final_suffix = ""
+        if suffix:
+            final_suffix = suffix
+        elif name is None and kwargs:
+            parts = [f"_{k}_{v}" for k, v in sorted(kwargs.items())]
+            final_suffix = "".join(parts)
+
+        final_name = f"{base_name}{final_suffix}"
+
+        _registry.append({
+            "target": inner_target,
+            "name": final_name,
             "ports": ports,
-        }
-    )
+            "kwargs": kwargs
+        })
 
+        return inner_target
 
-def export(**modules):
-    return modules
+    if target is not None:
+        if inspect.isclass(target) or callable(target):
+            return wrapper(target)
+
+    return wrapper
+
+def get_registry():
+    return _registry
+
+def clear_registry():
+    _registry.clear()
 `
 
 let pyodide = null;
@@ -154,12 +183,6 @@ async function convertAmaranthToRtlil(pythonFiles) {
 
         return convertedIlFiles;
     } finally {
-        try {
-            const clearFunc = pyodide.globals.get("clear_module_cache");
-            clearFunc(filenames);
-            clearFunc.destroy();
-        } catch(e) { console.error("Cache cleanup error", e); }
-
         for (const path of filenames) {
             try { pyodide.FS.unlink(path); } catch(e) { }
         }
