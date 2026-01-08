@@ -217,24 +217,18 @@ endmodule
 `
     } else if (extension === 'py') {
         return `from amaranth import *
-from amaranth.lib.wiring import Component, In, Out, Signature
 
-from digitaljs.utils import export, mod
-
+from digitaljs.utils import export
 
 # Write your modules here!
-class Circuit(Component):
+@export(ports=lambda m: [])
+class Circuit(Elaboratable):
     def __init__(self):
-        super().__init__(Signature({}))
+        pass
 
     def elaborate(self, platform):
         m = Module()
         return m
-
-
-exports = export(
-    circuit=mod(Circuit())
-)
 `;
     } else {
         return "";
@@ -515,12 +509,12 @@ function showSynthesisError(errorTitle, details, lint) {
         .alert();
 }
 
-let worker = null;
-function getWorker() {
-    if (worker !== null) return worker;
+let synthesisWorker = null;
+function getSynthesisWorker() {
+    if (synthesisWorker !== null) return synthesisWorker;
 
-    worker = new Worker(new URL("./worker.js", import.meta.url), { type: 'module' });
-    worker.onmessage = (e) => {
+    synthesisWorker = new Worker(new URL("./synthesis-worker.js", import.meta.url), { type: 'module' });
+    synthesisWorker.onmessage = (e) => {
         const messageType = e.data.type;
         if (messageType === 'synthesisFinished') {
             const { lint, output } = e.data;
@@ -536,12 +530,12 @@ function getWorker() {
         }
     }
 
-    return worker;
+    return synthesisWorker;
 }
 
 const synthesisStrategies = {
     wasm: (data, opts) => {
-        getWorker().postMessage({
+        getSynthesisWorker().postMessage({
             type: 'synthesizeAndLint',
             params: {
                 files: data,
