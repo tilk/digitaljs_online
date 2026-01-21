@@ -17,6 +17,7 @@ from amaranth.back import rtlil
 
 from digitaljs.utils import get_registry, clear_registry
 
+
 @contextmanager
 def add_path(path):
     if path not in sys.path:
@@ -29,63 +30,90 @@ def add_path(path):
     else:
         yield
 
+
+def register_exports_from_module(filename):
+    if not filename.endswith(".py"):
+        return None
+
+    module_name = filename[:-3]
+
+    if module_name not in sys.modules:
+        spec = importlib.util.spec_from_file_location(module_name, filename)
+        if not spec or not spec.loader:
+            raise ImportError(f"Could not load {filename}")
+
+        module = importlib.util.module_from_spec(spec)
+        sys.modules[module_name] = module
+
+        try:
+            spec.loader.exec_module(module)
+        except Exception as e:
+            raise ImportError(f"{filename}: {e}")
+
+    return
+
+
+def group_exports_by_module(exports):
+    exports_by_module = {}
+    for entry in exports:
+        module_attr = getattr(entry['target'], '__module__', None)
+        fallback_name = module_attr.split('.')[-1] if module_attr else 'unknown'
+
+        module_name = entry['module_name'] or fallback_name
+
+        output_filename = f'{module_name}.il'
+        if output_filename not in exports_by_module:
+            exports_by_module[output_filename] = []
+        exports_by_module[output_filename].append(entry)
+
+    return exports_by_module
+
+
+def convert_modules(exports_by_module):
+    results = {}
+    for output_filename, module_exports in exports_by_module.items():
+        exported_rtlils = []
+        for entry in module_exports:
+            target = entry['target']
+            name = entry['name']
+            args = entry['args']
+            ports_setting = entry['ports']
+
+            instance = target(**args)
+
+            ports = ports_setting(instance) if callable(ports_setting) else ports_setting
+
+            code = rtlil.convert(
+                instance,
+                name=name,
+                ports=ports
+            )
+            exported_rtlils.append(code)
+
+        results[output_filename] = exported_rtlils
+
+    return results
+
+
 def process_modules(filenames):
     results = {}
 
     try:
+        clear_registry()
         with add_path(os.getcwd()):
             for filename in filenames:
-                if not filename.endswith(".py"):
-                    continue
+                register_exports_from_module(filename)
 
-                module_name = filename[:-3]
-                output_filename = f'{module_name}.il'
+            exports_by_module = group_exports_by_module(get_registry())
 
-                clear_registry()
+            results = convert_modules(exports_by_module)
 
-                spec = importlib.util.spec_from_file_location(module_name, filename)
-                if not spec or not spec.loader:
-                    raise ImportError(f"Could not load {filename}")
-
-                module = importlib.util.module_from_spec(spec)
-                sys.modules[module_name] = module
-                spec.loader.exec_module(module)
-
-                exports = get_registry()
-
-                # Check for duplicate names
-                seen_names = set()
-                for entry in exports:
-                    name = entry['name']
-                    if name in seen_names:
-                        raise ValueError(f"Duplicate module name detected: '{name}'. Try to use the 'suffix' parameter of the @export decorator to disambiguate.")
-                    seen_names.add(name)
-
-                # Perform conversion
-                exported_rtlils = []
-                for entry in exports:
-                    target = entry['target']
-                    name = entry['name']
-                    kwargs = entry['kwargs']
-                    ports_setting = entry['ports']
-
-                    instance = target(**kwargs)
-
-                    ports = ports_setting(instance) if callable(ports_setting) else ports_setting
-
-                    code = rtlil.convert(
-                        instance,
-                        name=name,
-                        ports=ports
-                    )
-                    exported_rtlils.append(code)
-
-                results[output_filename] = exported_rtlils
         return results
     except Exception as e:
         return str(e)
     finally:
         clear_module_cache(filenames)
+
 
 def clear_module_cache(filenames):
     PROTECTED_MODULES = {'sys', 'os', 'math', 're', 'amaranth'}
@@ -102,25 +130,40 @@ const pythonUtils = `
 import inspect
 
 _registry = []
+_seen_names = set()
 
-def export(target=None, *, name=None, suffix=None, ports=None, **kwargs):
+
+def export(target=None, *, name=None, suffix=None, ports=None, args=None):
     def wrapper(inner_target):
         base_name = name or inner_target.__name__
 
         final_suffix = ""
         if suffix:
             final_suffix = suffix
-        elif name is None and kwargs:
-            parts = [f"_{k}_{v}" for k, v in sorted(kwargs.items())]
+        elif name is None and args:
+            parts = [f"_{k}_{v}" for k, v in sorted(args.items())]
             final_suffix = "".join(parts)
 
         final_name = f"{base_name}{final_suffix}"
+
+        if final_name in _seen_names:
+            raise ValueError(f"Duplicate export name detected: '{final_name}'. Try to use the 'suffix' parameter of the @export decorator to disambiguate.")
+        _seen_names.add(final_name)
+
+        module = inspect.getmodule(inner_target)
+        module_name = None
+        if module is not None:
+            module_name = module.__name__
+            # Extract just the module name without package path
+            if '.' in module_name:
+                module_name = module_name.split('.')[-1]
 
         _registry.append({
             "target": inner_target,
             "name": final_name,
             "ports": ports,
-            "kwargs": kwargs
+            "args": args or {},
+            "module_name": module_name
         })
 
         return inner_target
@@ -131,17 +174,22 @@ def export(target=None, *, name=None, suffix=None, ports=None, **kwargs):
 
     return wrapper
 
+
 def get_registry():
     return _registry
 
+
 def clear_registry():
     _registry.clear()
+    _seen_names.clear()
 `
 
 let pyodide = null;
+let initializationPromise = null;
+
 async function loadPythonEnviroment() {
     if (pyodide === null) {
-        console.log('[Amaranth Worker]: Loading enviroment...')
+        console.log('[Amaranth Worker]: Loading environment...');
         pyodide = await loadPyodide({
             packages: pythonPackages,
             stderr: (_) => {},
@@ -153,12 +201,26 @@ async function loadPythonEnviroment() {
 
         await pyodide.runPythonAsync(pythonHelperScript);
 
-        console.log('[Amaranth Worker]: Enviroment ready')
+        console.log('[Amaranth Worker]: Environment ready');
     }
     return pyodide;
 }
 
-const initializationPromise = loadPythonEnviroment();
+async function resetPythonEnvironment() {
+    if (initializationPromise !== null) {
+        console.log('[Amaranth Worker]: Waiting for environment to be fully loaded before resetting...');
+        await initializationPromise;
+    }
+
+    console.log('[Amaranth Worker]: Resetting environment...')
+    pyodide = null;
+    initializationPromise = null;
+    
+    initializationPromise = loadPythonEnviroment();
+    return initializationPromise;
+}
+
+initializationPromise = loadPythonEnviroment();
 
 async function convertAmaranthToRtlil(pythonFiles) {
     const filenames = Object.keys(pythonFiles);
@@ -179,7 +241,7 @@ async function convertAmaranthToRtlil(pythonFiles) {
 
         Object.keys(convertedIlFiles).forEach(filename => {
             convertedIlFiles[filename] = convertedIlFiles[filename].join('\n');
-        })
+        });
 
         return convertedIlFiles;
     } finally {
@@ -212,6 +274,13 @@ self.onmessage = async (e) => {
             self.postMessage({type: 'pythonConversionFinished', output: {type: 'success', files: resultFiles}});
         } catch (err) {
             self.postMessage({type: 'pythonConversionFinished', output: {type: 'error', message: 'Amaranth conversion failed', details: err.message || String(err)}});
+        }
+    } else if (type === 'resetEnvironment') {
+        try {
+            await resetPythonEnvironment();
+            self.postMessage({type: 'environmentReset', output: {type: 'success'}});
+        } catch (err) {
+            self.postMessage({type: 'environmentReset', output: {type: 'error', message: 'Failed to reset environment', details: err.message || String(err)}});
         }
     } else {
         throw new Error(`[Amaranth Worker] Unexpected message ${(e.data).type}`);

@@ -183,6 +183,24 @@ function make_tab(filename, extension, content) {
             if (helpers[name].isThreadRunning(pid))
                 helpers[name].stopThread(pid);
         });
+    } else if (extension == 'py') {
+        const panel2 = $('<div>')
+            .appendTo(panel);
+        ed_div.appendTo(panel2);
+        $('<div class="tab-padded"></div>').appendTo(panel2);
+        panel.addClass("tab-withbar");
+        const bar = $(`
+            <div class="btn-toolbar" role="toolbar">
+             <div class="btn-group" role="group">
+              <button name="pyrun" type="button" class="btn btn-secondary">Clear python enviroment</button>
+             </div>
+            </div>`)
+            .prependTo(panel);
+        bar.find('button[name=pyrun]').on('click', () => {
+            if (amaranthWorker !== null) {
+                getAmaranthWorker().postMessage({type: 'resetEnvironment'});
+            }
+        });
     }
 
     const editorSettings = {
@@ -217,15 +235,16 @@ endmodule
 `
     } else if (extension === 'py') {
         return `from amaranth import *
+from amaranth.lib.wiring import Component, Signature
 
 from digitaljs.utils import export
 
 # Write your modules here!
-@export(ports=lambda m: [])
-class Circuit(Elaboratable):
+@export
+class Circuit(Component):
     def __init__(self):
-        pass
-
+        super().__init__(Signature({}))
+    
     def elaborate(self, platform):
         m = Module()
         return m
