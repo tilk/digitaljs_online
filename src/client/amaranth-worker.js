@@ -8,14 +8,14 @@ const amaranth_0_5_8 = 'https://files.pythonhosted.org/packages/74/4b/61caac0c0b
 const pythonPackages = [rfc3986_2_0_0, jschon_0_11_1, pyvcd_0_4_1, amaranth_0_5_8];
 
 const pythonHelperScript = `
-import sys
-import os
-import importlib.util
 from contextlib import contextmanager
+import importlib.util
+import os
+import sys
 
 from amaranth.back import rtlil
 
-from digitaljs.utils import get_registry, clear_registry
+from digitaljs.utils import get_registry, clear_registry, DigitalJsError
 
 
 @contextmanager
@@ -48,7 +48,15 @@ def register_exports_from_module(filename):
         try:
             spec.loader.exec_module(module)
         except Exception as e:
-            raise ImportError(f"{filename}: {e}")
+            # Find the last traceback frame (where the error originated)
+            tb = e.__traceback__
+            while tb.tb_next:
+                tb = tb.tb_next
+
+            error_file = os.path.basename(tb.tb_frame.f_code.co_filename)
+            error_line = tb.tb_lineno
+
+            raise DigitalJsError(f"{type(e).__name__}: {e}", filename=error_file, line=error_line)
 
     return
 
@@ -109,8 +117,11 @@ def process_modules(filenames):
             results = convert_modules(exports_by_module)
 
         return results
-    except Exception as e:
+    except DigitalJsError as e:
         return str(e)
+    except Exception as e:
+        # This should not happen normally, but just in case, catch it
+        return f'Internal error. Try resetting your Python environment. {type(e).__name__}: {str(e)}'
     finally:
         clear_module_cache(filenames)
 
@@ -128,9 +139,26 @@ def clear_module_cache(filenames):
 
 const pythonUtils = `
 import inspect
+import os
+
 
 _registry = []
 _seen_names = set()
+
+
+class DigitalJsError(Exception):
+    def __init__(self, message, filename=None, line=None):
+        self.message = message
+        self.filename = filename
+        self.line = line
+        super().__init__(self._format_message())
+
+    def _format_message(self):
+        if self.filename and self.line:
+            return f"{self.filename}:{self.line}: {self.message}"
+        elif self.filename:
+            return f"{self.filename}: {self.message}"
+        return self.message
 
 
 def export(target=None, *, name=None, suffix=None, ports=None, args=None):
@@ -145,9 +173,20 @@ def export(target=None, *, name=None, suffix=None, ports=None, args=None):
             final_suffix = "".join(parts)
 
         final_name = f"{base_name}{final_suffix}"
-
         if final_name in _seen_names:
-            raise ValueError(f"Duplicate export name detected: '{final_name}'. Try to use the 'suffix' parameter of the @export decorator to disambiguate.")
+            source_file = None
+            source_line = None
+            try:
+                source_file = os.path.basename(inspect.getsourcefile(inner_target))
+                _, source_line = inspect.getsourcelines(inner_target)
+            except (TypeError, OSError):
+                pass
+
+            raise DigitalJsError(
+                f"Duplicate export name detected: '{final_name}'. Try to use the 'suffix' parameter of the @export decorator to disambiguate.",
+                filename=source_file,
+                line=source_line
+            )
         _seen_names.add(final_name)
 
         module = inspect.getmodule(inner_target)
@@ -187,7 +226,7 @@ def clear_registry():
 let pyodide = null;
 let initializationPromise = null;
 
-async function loadPythonEnviroment() {
+async function loadPythonEnvironment() {
     if (pyodide === null) {
         console.log('[Amaranth Worker]: Loading environment...');
         pyodide = await loadPyodide({
@@ -215,13 +254,12 @@ async function resetPythonEnvironment() {
     console.log('[Amaranth Worker]: Resetting environment...')
     pyodide = null;
     initializationPromise = null;
-    
-    initializationPromise = loadPythonEnviroment();
+
+    initializationPromise = loadPythonEnvironment();
     return initializationPromise;
 }
 
-initializationPromise = loadPythonEnviroment();
-
+initializationPromise = loadPythonEnvironment();
 async function convertAmaranthToRtlil(pythonFiles) {
     const filenames = Object.keys(pythonFiles);
     try {

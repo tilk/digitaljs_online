@@ -192,7 +192,7 @@ function make_tab(filename, extension, content) {
         const bar = $(`
             <div class="btn-toolbar" role="toolbar">
              <div class="btn-group" role="group">
-              <button name="pyrun" type="button" class="btn btn-secondary">Clear python enviroment</button>
+              <button name="pyrun" type="button" class="btn btn-secondary">Clear Python environment</button>
              </div>
             </div>`)
             .prependTo(panel);
@@ -235,7 +235,7 @@ endmodule
 `
     } else if (extension === 'py') {
         return `from amaranth import *
-from amaranth.lib.wiring import Component, Signature
+from amaranth.lib.wiring import Component, In, Out, Signature
 
 from digitaljs.utils import export
 
@@ -244,7 +244,7 @@ from digitaljs.utils import export
 class Circuit(Component):
     def __init__(self):
         super().__init__(Signature({}))
-    
+
     def elaborate(self, platform):
         m = Module()
         return m
