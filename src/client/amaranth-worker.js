@@ -47,16 +47,16 @@ def register_exports_from_module(filename):
 
         try:
             spec.loader.exec_module(module)
+        except SyntaxError as e:
+            # Syntax errors have different backtrace handling as it does not include
+            # file/line info where error occurred, so we handle it specially here.
+            raise DigitalJsError(
+                e.msg,
+                filename=os.path.basename(e.filename),
+                line=e.lineno
+            )
         except Exception as e:
-            # Find the last traceback frame (where the error originated)
-            tb = e.__traceback__
-            while tb.tb_next:
-                tb = tb.tb_next
-
-            error_file = os.path.basename(tb.tb_frame.f_code.co_filename)
-            error_line = tb.tb_lineno
-
-            raise DigitalJsError(f"{type(e).__name__}: {e}", filename=error_file, line=error_line)
+            raise DigitalJsError.from_exception(e)
 
     return
 
@@ -87,16 +87,27 @@ def convert_modules(exports_by_module):
             args = entry['args']
             ports_setting = entry['ports']
 
-            instance = target(**args)
+            instance = None
+            try:
+                instance = target(**args)
+            except Exception as e:
+                raise DigitalJsError.from_target(target, f"Failed to instantiate '{name}'; {type(e).__name__}: {e}")
 
-            ports = ports_setting(instance) if callable(ports_setting) else ports_setting
+            ports = None
+            try:
+                ports = ports_setting(instance) if callable(ports_setting) else ports_setting
+            except Exception as e:
+                raise DigitalJsError.from_target(target, f"Failed to determine ports for '{name}'; {type(e).__name__}: {e}")
 
-            code = rtlil.convert(
-                instance,
-                name=name,
-                ports=ports
-            )
-            exported_rtlils.append(code)
+            try:
+                code = rtlil.convert(
+                    instance,
+                    name=name,
+                    ports=ports
+                )
+                exported_rtlils.append(code)
+            except Exception as e:
+                raise DigitalJsError.from_exception(e, f"Failed to convert '{name}'; {type(e).__name__}: {e}")
 
         results[output_filename] = exported_rtlils
 
@@ -153,6 +164,39 @@ class DigitalJsError(Exception):
         self.line = line
         super().__init__(self._format_message())
 
+
+    @classmethod
+    def from_exception(cls, e, message=None):
+        # Find the last traceback frame (where the error originated)
+        tb = e.__traceback__
+        while tb and tb.tb_next:
+            tb = tb.tb_next
+
+        error_file = None
+        error_line = None
+        if tb:
+            error_file = os.path.basename(tb.tb_frame.f_code.co_filename)
+            error_line = tb.tb_lineno
+
+        if message is None:
+            message = f"{type(e).__name__}: {e}"
+
+        return cls(message, filename=error_file, line=error_line)
+
+
+    @classmethod
+    def from_target(cls, target, message):
+        source_file = None
+        source_line = None
+        try:
+            source_file = os.path.basename(inspect.getsourcefile(target))
+            _, source_line = inspect.getsourcelines(target)
+        except (TypeError, OSError):
+            pass
+
+        return cls(message, filename=source_file, line=source_line)
+
+
     def _format_message(self):
         if self.filename and self.line:
             return f"{self.filename}:{self.line}: {self.message}"
@@ -174,18 +218,9 @@ def export(target=None, *, name=None, suffix=None, ports=None, args=None):
 
         final_name = f"{base_name}{final_suffix}"
         if final_name in _seen_names:
-            source_file = None
-            source_line = None
-            try:
-                source_file = os.path.basename(inspect.getsourcefile(inner_target))
-                _, source_line = inspect.getsourcelines(inner_target)
-            except (TypeError, OSError):
-                pass
-
-            raise DigitalJsError(
-                f"Duplicate export name detected: '{final_name}'. Try to use the 'suffix' parameter of the @export decorator to disambiguate.",
-                filename=source_file,
-                line=source_line
+            raise DigitalJsError.from_target(
+                inner_target,
+                f"Duplicate export name detected: '{final_name}'. Try to use the 'suffix' parameter of the @export decorator to disambiguate."
             )
         _seen_names.add(final_name)
 
