@@ -47,6 +47,8 @@ def register_exports_from_module(filename):
 
         try:
             spec.loader.exec_module(module)
+        except DigitalJsError as e:
+            raise e
         except SyntaxError as e:
             # Syntax errors have different backtrace handling as it does not include
             # file/line info where error occurred, so we handle it specially here.
@@ -90,12 +92,16 @@ def convert_modules(exports_by_module):
             instance = None
             try:
                 instance = target(**args)
+            except DigitalJsError as e:
+                raise e
             except Exception as e:
                 raise DigitalJsError.from_target(target, f"Failed to instantiate '{name}'; {type(e).__name__}: {e}")
 
             ports = None
             try:
                 ports = ports_setting(instance) if callable(ports_setting) else ports_setting
+            except DigitalJsError as e:
+                raise e
             except Exception as e:
                 raise DigitalJsError.from_target(target, f"Failed to determine ports for '{name}'; {type(e).__name__}: {e}")
 
@@ -106,6 +112,8 @@ def convert_modules(exports_by_module):
                     ports=ports
                 )
                 exported_rtlils.append(code)
+            except DigitalJsError as e:
+                raise e
             except Exception as e:
                 raise DigitalJsError.from_exception(e, f"Failed to convert '{name}'; {type(e).__name__}: {e}")
 
