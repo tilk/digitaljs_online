@@ -7,6 +7,7 @@ import ClipboardJS from 'clipboard';
 import './scss/app.scss';
 import 'codemirror/mode/verilog/verilog.js';
 import 'codemirror/mode/lua/lua.js';
+import 'codemirror/mode/python/python.js';
 import 'codemirror/lib/codemirror.css';
 import 'codemirror/addon/lint/lint.css';
 import 'bootstrap/js/src/tab.js';
@@ -182,26 +183,81 @@ function make_tab(filename, extension, content) {
             if (helpers[name].isThreadRunning(pid))
                 helpers[name].stopThread(pid);
         });
+    } else if (extension == 'py') {
+        const panel2 = $('<div>')
+            .appendTo(panel);
+        ed_div.appendTo(panel2);
+        $('<div class="tab-padded"></div>').appendTo(panel2);
+        panel.addClass("tab-withbar");
+        const bar = $(`
+            <div class="btn-toolbar" role="toolbar">
+             <div class="btn-group" role="group">
+              <button name="pyrun" type="button" class="btn btn-secondary">Clear Python environment</button>
+             </div>
+            </div>`)
+            .prependTo(panel);
+        bar.find('button[name=pyrun]').on('click', () => {
+            if (amaranthWorker !== null) {
+                getAmaranthWorker().postMessage({type: 'resetEnvironment'});
+            }
+        });
     }
+
+    const editorSettings = {
+        v: { mode: { name: 'verilog' } },
+        sv: { mode: { name: 'verilog' } },
+        lua: { mode: { name: 'lua' } },
+        py: {
+            mode: { name: 'python' },
+            indentUnit: 4,
+            indentWithTabs: false,
+            smartIndent: true,
+            tabSize: 4
+        }
+    };
+
     const editor = CodeMirror.fromTextArea(ed_div[0], {
         lineNumbers: true,
-        mode: {
-            name: extension == 'v' || extension == 'sv' ? 'verilog' : 
-                  extension == 'lua' ? 'lua' : 'text'
-        },
-        gutters: ['CodeMirror-lint-markers']
+        mode: { name: 'text' },
+        gutters: ['CodeMirror-lint-markers'],
+        ...(editorSettings[extension])
     });
     editor._is_dirty = false;
     editor.on('changes', () => { editor._is_dirty = true; });
     editors[name] = editor;
 }
 
+function getDefaultContent(extension) {
+    if (extension === "v" || extension === "sv") {
+        return `// Write your modules here!
+module circuit();
+endmodule
+`
+    } else if (extension === 'py') {
+        return `from amaranth import *
+from amaranth.lib.wiring import Component, In, Out, Signature
+
+from digitaljs.utils import export
+
+# Write your modules here!
+@export
+class Circuit(Component):
+    def __init__(self):
+        super().__init__(Signature({}))
+
+    def elaborate(self, platform):
+        m = Module()
+        return m
+`;
+    } else {
+        return "";
+    }
+}
+
 $('#newtab').on('click', function (e) {
-    let filename = $('#start input[name=newtabname]').val() || 'unnamed';
+    const filename = $('#start input[name=newtabname]').val() || 'unnamed';
     const extension = $("#exten").data("extension");
-    let initial = "";
-    if (extension == "v" || extension == "sv")
-        initial = "// Write your modules here!\nmodule circuit();\nendmodule";
+    const initial = getDefaultContent(extension);
     make_tab(filename, extension, initial);
 });
 
@@ -472,14 +528,14 @@ function showSynthesisError(errorTitle, details, lint) {
         .alert();
 }
 
-let yosysWorker = null;
-function initYosysWorkerIfNeeded() {
-    if (yosysWorker !== null) return;
+let synthesisWorker = null;
+function getSynthesisWorker() {
+    if (synthesisWorker !== null) return synthesisWorker;
 
-    yosysWorker = new Worker(new URL("./worker.js", import.meta.url), { type: 'module' });
-    yosysWorker.onmessage = (e) => {
-        switch (e.data.type) {
-        case 'synthesisFinished':
+    synthesisWorker = new Worker(new URL("./synthesis-worker.js", import.meta.url), { type: 'module' });
+    synthesisWorker.onmessage = (e) => {
+        const messageType = e.data.type;
+        if (messageType === 'synthesisFinished') {
             const { lint, output } = e.data;
             if (output.type === 'success') {
                 try {
@@ -487,22 +543,23 @@ function initYosysWorkerIfNeeded() {
                 } catch (err) {
                     showSynthesisError('Failed to convert Yosys output to DigitalJS circuit', err.toString(), lint);
                 }
-                return;
             } else {
                 showSynthesisError(output.message, output.stderr, lint);
             }
-            return;
         }
     }
+
+    return synthesisWorker;
 }
 
 const synthesisStrategies = {
     wasm: (data, opts) => {
-        initYosysWorkerIfNeeded();
-        yosysWorker.postMessage({
+        getSynthesisWorker().postMessage({
             type: 'synthesizeAndLint',
-            files: data,
-            options: opts
+            params: {
+                files: data,
+                options: opts
+            }
         });
     },
     server: (data, opts) => {
@@ -527,17 +584,8 @@ const synthesisStrategies = {
     }
 };
 
-function synthesize() {
-    const data = {};
-    for (const [name, editor] of Object.entries(editors)) {
-        const panel = $('#' + name);
-        data[panel.data("filename") + "." + panel.data("extension")] = editor.getValue();
-        editor._is_dirty = false;
-    }
-    for (const [filename, file] of Object.entries(filedata)) {
-        data[filename] = file.result;
-    }
-    if (Object.keys(data).length == 0) {
+function synthesize(files) {
+    if (Object.keys(files).length == 0) {
         $('<div class="query-alert alert alert-danger alert-dismissible fade show" role="alert"></div>')
             .append('<button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>')
             .append(document.createTextNode("No source files for synthesis."))
@@ -555,7 +603,60 @@ function synthesize() {
 
     const synthesisMode = $('#synthesis-mode').val();
 
-    synthesisStrategies[synthesisMode](data, opts);
+    synthesisStrategies[synthesisMode](files, opts);
+}
+
+
+let amaranthWorker = null;
+function getAmaranthWorker() {
+    if (amaranthWorker !== null) return amaranthWorker;
+
+    amaranthWorker = new Worker(new URL("./amaranth-worker.js", import.meta.url), { type: 'module' });
+    amaranthWorker.onmessage = (e) => {
+        const messageType = e.data.type;
+        if (messageType === 'pythonConversionFinished') {
+            const { output } = e.data;
+            if (output.type === 'success') {
+                const { files } = output;
+                synthesize(files);
+            } else {
+                const { message, details } = output;
+                showSynthesisError(message, details, []);
+            }
+        }
+    }
+
+    return amaranthWorker;
+}
+
+function processFiles() {
+    const synthesizableExtensions = new Set(['sv', 'v', 'vh', 'py']);
+    const data = {};
+    for (const [name, editor] of Object.entries(editors)) {
+        const panel = $('#' + name);
+        const extension = panel.data("extension");
+
+        if (!synthesizableExtensions.has(extension)) continue;
+
+        data[panel.data("filename") + "." + extension] = editor.getValue();
+        editor._is_dirty = false;
+    }
+    for (const [filename, file] of Object.entries(filedata)) {
+        data[filename] = file.result;
+    }
+
+    const pythonConversionNeeded = Object.keys(data).some((name) => name.endsWith('.py'));
+
+    if (pythonConversionNeeded) {
+        getAmaranthWorker().postMessage({
+            type: 'convertAmaranth',
+            params: {
+                files: data
+            }
+        });
+    } else {
+        synthesize(data);
+    }
 }
 
 function prepareFilesForSynthesis() {
@@ -564,11 +665,11 @@ function prepareFilesForSynthesis() {
     for (const file of document.getElementById('files').files) {
         const reader = filedata[file.name] = new FileReader();
         reader.onload = x => {
-            if (--filenum == 0) synthesize();
+            if (--filenum == 0) processFiles();
         };
         reader.readAsText(file);
     }
-    if (filenum == 0) synthesize();
+    if (filenum == 0) processFiles();
 }
 
 function synthesizeAndRun() {

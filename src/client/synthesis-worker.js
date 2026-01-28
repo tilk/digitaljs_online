@@ -44,6 +44,7 @@ function loadVerilatorRuntime() {
     return loadVerilator();
 }
 
+
 const initializationPromise = Promise.all([
     loadYosysRuntime(),
     loadVerilatorRuntime()
@@ -127,9 +128,10 @@ async function runVerilatorOnFiles(files) {
 }
 
 self.onmessage = async (e) => {
-    const {type, files, options} = e.data;
+    const {type, params } = e.data;
 
     if (type === 'synthesizeAndLint') {
+        const { files, options } = params;
         try {
             await initializationPromise;
 
