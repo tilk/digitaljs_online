@@ -86,7 +86,7 @@ export default (env, argv) => {
             new HtmlWebpackInlineSVGPlugin(),
             new CopyWebpackPlugin({
                 patterns: [
-                    { from: 'public/*.+(ico|png|svg|webmanifest)', to: '[name][ext]' },
+                    { from: 'public/*.+(ico|png|svg|webmanifest|js|wasm)', to: '[name][ext]' },
                     { from: 'node_modules/yosys2digitaljs/tests/*.sv', to: 'examples/[name][ext]' }
                 ]
             })
