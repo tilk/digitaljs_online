@@ -17,6 +17,7 @@ import * as digitaljs from 'digitaljs';
 import * as digitaljs_lua from 'digitaljs_lua';
 import Split from 'split-grid';
 import { saveAs } from 'file-saver';
+import sanitize from 'sanitize-filename';
 
 const examples = [
     ['sr_gate', 'SR latch'],
@@ -114,6 +115,9 @@ function find_filename(name) {
 }
 
 function make_tab(filename, extension, content) {
+    filename = sanitize(filename);
+    if (filename.trim() === '') filename = 'unnamed';
+
     const orig_filename = filename;
     let fcnt = 0;
     while ($('#editor-tab > .tab-content > .tab-pane')
