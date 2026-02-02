@@ -114,9 +114,11 @@ function find_filename(name) {
     return list[0].id;
 }
 
-function make_tab(filename, extension, content) {
-    filename = sanitize(filename);
-    if (filename.trim() === '') filename = 'unnamed';
+function make_tab(maybeFilename, extension, content) {
+    const unnamedName = 'unnamed';
+
+    const sanitizedFilename = sanitize(maybeFilename || unnamedName);
+    let filename = sanitizedFilename.trim() || unnamedName;
 
     const orig_filename = filename;
     let fcnt = 0;
@@ -259,10 +261,10 @@ class Circuit(Component):
 }
 
 $('#newtab').on('click', function (e) {
-    const filename = $('#start input[name=newtabname]').val() || 'unnamed';
+    const maybeFilename = $('#start input[name=newtabname]').val();
     const extension = $("#exten").data("extension");
     const initial = getDefaultContent(extension);
-    make_tab(filename, extension, initial);
+    make_tab(maybeFilename, extension, initial);
 });
 
 for (const [file, name] of examples) {
