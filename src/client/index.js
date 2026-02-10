@@ -1,6 +1,5 @@
 "use strict";
 
-import 'popper.js';
 import 'bootstrap';
 import Droppable from 'droppable';
 import ClipboardJS from 'clipboard';
