@@ -1,3 +1,9 @@
+@use "~bootstrap/scss/bootstrap";
+
+.symbola {
+    font-family: "Symbola", bootstrap.$font-family-sans-serif;
+}
+
 div.editor-tab >div.tab-content {
 
   >div {
@@ -34,7 +40,7 @@ div.editor-tab >div.tab-content {
 }
 
 nav .nav-item button.closeTab {
-    @extend .ml-1;
+    @extend .ms-1;
     @extend .symbola;
 }
 

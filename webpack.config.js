@@ -47,7 +47,7 @@ export default (env, argv) => {
                 },
                 {
                     test: /\.scss$/,
-                    use: [devMode ? "style-loader" : MiniCssExtractPlugin.loader, "css-loader", "sass-loader"]
+                    use: [devMode ? "style-loader" : MiniCssExtractPlugin.loader, "css-loader", {loader: 'sass-loader', options: {sassOptions: {quietDeps: true}}}]
                 },
                 {
                     test: /\.(png|woff|woff2|eot|ttf|svg)$/,

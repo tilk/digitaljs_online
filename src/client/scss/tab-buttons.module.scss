@@ -1,8 +1,10 @@
+@use "global-vars.scss";
+
 #tab-buttons-wrapper {
   display: none;
 }
 
-@media (max-width: $mobile-ui-max-width) {
+@media (max-width: global-vars.$mobile-ui-max-width) {
   $tab-buttons-height: 3.8rem;
 
   #tab-buttons-wrapper {
