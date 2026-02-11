@@ -1,6 +1,6 @@
 "use strict";
 
-import 'bootstrap';
+import * as bootstrap from 'bootstrap';
 import Droppable from 'droppable';
 import ClipboardJS from 'clipboard';
 import './scss/app.scss';
@@ -9,7 +9,6 @@ import 'codemirror/mode/lua/lua.js';
 import 'codemirror/mode/python/python.js';
 import 'codemirror/lib/codemirror.css';
 import 'codemirror/addon/lint/lint.css';
-import 'bootstrap/js/src/tab.js';
 import CodeMirror from 'codemirror/lib/codemirror.js';
 import $ from 'jquery';
 import * as digitaljs from 'digitaljs';
@@ -46,11 +45,6 @@ Split({
     }],
     columnMinSize: '100px',
     columnSnapOffset: 0
-});
-
-$('#editor-tab > nav').on('click', 'a', function (e) {
-    e.preventDefault();
-    $(this).tab('show');
 });
 
 let cnt = 0;
@@ -98,7 +92,8 @@ function close_tab (tab_a)
     var li_list = $(tab_a).parent();
     $(tab_a).remove(); //remove li of tab
     if ($(tabContentId).is(":visible")) {
-        li_list.find("a").eq(0).tab('show'); // Select first tab
+        const bs_tab = new bootstrap.Tab(li_list.find("a").eq(0));
+        bs_tab.show(); // Select first tab
     }
     $(tabContentId).remove(); //remove respective tab content
     const name = tabContentId.substring(1);
@@ -126,7 +121,7 @@ function make_tab(maybeFilename, extension, content) {
         filename = orig_filename + fcnt++;
     }
     const name = "file" + cnt++;
-    const tab = $('<a class="nav-item nav-link" role="tab" data-toggle="tab" aria-selected="false">')
+    const tab = $('<a class="nav-item nav-link" role="tab" data-bs-toggle="tab" aria-selected="false">')
         .attr('href', '#' + name)
         .attr('aria-controls', name)
         .text(filename + '.' + extension)
@@ -144,7 +139,8 @@ function make_tab(maybeFilename, extension, content) {
         .attr('data-fullname', filename + '.' + extension)
         .appendTo($('#editor-tab > .tab-content'));
     const ed_div = $('<textarea>').val(content).appendTo(panel);
-    $(tab).tab('show');
+    const bs_tab = new bootstrap.Tab(tab);
+    bs_tab.show();
     // Lua scripting support
     if (extension == 'lua') {
         const panel2 = $('<div>')
