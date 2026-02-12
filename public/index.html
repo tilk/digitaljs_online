@@ -20,7 +20,7 @@
   <div class="main-wrapper-grid">
     <div id="toolbar">
       <div class="btn-toolbar" role="toolbar" aria-label="Toolbar">
-        <div class="mr-2 upper-toolbar-group digitaljs-logo" title="DigitalJS"></div>
+        <div class="me-2 upper-toolbar-group digitaljs-logo" title="DigitalJS"></div>
         <div id="synthesize-bar">
           <form>
             <button name="synthesize-btn" title="Synthesize and simulate!" type="button" class="btn btn-primary">
@@ -32,7 +32,7 @@
             </button>
           </form>
         </div>
-        <div class="symbola btn-group mr-2 upper-toolbar-group" role="group" aria-label="Time control">
+        <div class="symbola btn-group me-2 upper-toolbar-group" role="group" aria-label="Time control">
           <button name="pause" type="button" class="btn btn-secondary" title="Pause simulation"
             disabled="true">⏸</button>
           <button name="resume" type="button" class="btn btn-secondary" title="Resume simulation"
@@ -44,13 +44,13 @@
           <button name="next" type="button" class="btn btn-secondary" title="Run until next event"
             disabled="true">⇥</button>
         </div>
-        <div class="input-group mr-2 upper-toolbar-group">
+        <div class="input-group me-2 upper-toolbar-group">
           <div class="input-group-prepend">
             <span class="symbola input-group-text" title="Current tick">⏱</span>
           </div>
           <input type="text" class="form-control" disabled="disabled" id="tick" />
         </div>
-        <div class="symbola btn-group mr-2 upper-toolbar-group" role="group" aria-label="Saving and sharing">
+        <div class="symbola btn-group me-2 upper-toolbar-group" role="group" aria-label="Saving and sharing">
           <button name="load" type="button" class="btn btn-secondary" title="Load from file" disabled="true">📁</button>
           <button name="save" type="button" class="btn btn-secondary" title="Save to file" disabled="true">💾</button>
           <button name="link" type="button" class="btn btn-secondary" title="Get link" disabled="true">🔗</button>
@@ -85,7 +85,7 @@
                 and press the Synthesize button to start the simulation.</p>
               <div class="row row-cols-lg-auto mb-3">
                 <div class="col-12">
-                  <input type="text" name="newtabname" placeholder="file name" pattern="[a-zA-Z0-9_-]*" spellcheck="false" autocapitalize="false" autocomplete="false"
+                  <input type="text" name="newtabname" placeholder="file name" pattern="[a-zA-Z0-9_\-]*" spellcheck="false" autocapitalize="false" autocomplete="false"
                     defaultValue="input" class="form-control">
                 </div>
 
@@ -198,24 +198,24 @@
 
       <div id="monitorbox">
         <div class="btn-toolbar" role="toolbar" aria-label="Toolbar">
-          <div class="symbola btn-group mr-2" role="group" aria-label="Scale control">
+          <div class="symbola btn-group me-2" role="group" aria-label="Scale control">
             <button name="ppt_up" type="button" class="btn btn-secondary" title="Increase pixels per tick"
               disabled="true">+</button>
             <button name="ppt_down" type="button" class="btn btn-secondary" title="Decrease pixels per tick"
               disabled="true">-</button>
           </div>
-          <div class="input-group mr-2">
+          <div class="input-group me-2">
             <div class="input-group-prepend">
               <span class="input-group-text" title="Ticks per grid line">scale</span>
             </div>
             <input type="text" class="form-control" disabled="disabled" name="scale" />
           </div>
-          <div class="symbola btn-group mr-2" role="group" aria-label="Time control">
+          <div class="symbola btn-group me-2" role="group" aria-label="Time control">
             <button name="live" type="button" class="btn btn-secondary" title="Live mode" disabled="true">▶</button>
             <button name="left" type="button" class="btn btn-secondary" title="Move left" disabled="true">←</button>
             <button name="right" type="button" class="btn btn-secondary" title="Move right" disabled="true">→</button>
           </div>
-          <div class="input-group mr-2">
+          <div class="input-group me-2">
             <div class="input-group-prepend">
               <span class="input-group-text" title="Display range">range</span>
             </div>
