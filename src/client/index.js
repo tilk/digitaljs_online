@@ -52,10 +52,9 @@ let editors = {}, helpers = {};
 
 function handle_luaerror(name, e) {
     $('<div class="query-alert alert alert-danger alert-dismissible fade show" role="alert"></div>')
-        .append('<button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>')
+        .append('<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>')
         .append($("<pre>").text(e.luaMessage))
-        .appendTo($('#' + name).find("> div:last-child > div:last-child"))
-        .alert();
+        .appendTo($('#' + name).find("> div:last-child > div:last-child"));
 }
 
 function make_luarunner(name, circuit) {
@@ -71,10 +70,9 @@ function make_luarunner(name, circuit) {
     });
     helpers[name].on('print', msgs => {
         $('<div class="query-alert alert alert-info alert-dismissible fade show" role="alert"></div>')
-            .append('<button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>')
+            .append('<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>')
             .append($("<pre>").text(msgs.join('\t')))
-            .appendTo($('#' + name).find('> div:last-child > div:last-child'))
-            .alert();
+            .appendTo($('#' + name).find('> div:last-child > div:last-child'));
     });
 }
 
@@ -163,7 +161,10 @@ function make_tab(maybeFilename, extension, content) {
             make_luarunner(name, circuit);
         }
         bar.find('button[name=luarun]').on('click', () => {
-            panel.find(".query-alert").removeClass('fade').alert('close');
+            panel[0].querySelectorAll('.query-alert').forEach(element => {
+                element.classList.remove('fade');
+                new bootstrap.Alert(element).close()
+            });
             let pid;
             try {
                 pid = helpers[name].runThread(editors[name].getValue());
@@ -470,7 +471,7 @@ function makeLintMarker(cm, labels, severity, multiple) {
         inner.className = "CodeMirror-lint-marker CodeMirror-lint-marker-multiple";
     }
     let text = labels.join("\n");
-    $(inner).tooltip({
+    const tooltip = new bootstrap.Tooltip(inner, {
         title: text
     });
 
@@ -522,11 +523,10 @@ function showSynthesisError(errorTitle, details, lint) {
     updateLint(lint);
     $('form').find('input, textarea, button, select').prop('disabled', false);
     $('<div class="query-alert alert alert-danger alert-dismissible fade show" role="alert"></div>')
-        .append('<button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>')
+        .append('<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>')
         .append(document.createTextNode(errorTitle))
         .append($("<pre>").text(details))
-        .appendTo($('#toolbar'))
-        .alert();
+        .appendTo($('#toolbar'));
 }
 
 let synthesisWorker = null;
@@ -588,10 +588,9 @@ const synthesisStrategies = {
 function synthesize(files) {
     if (Object.keys(files).length == 0) {
         $('<div class="query-alert alert alert-danger alert-dismissible fade show" role="alert"></div>')
-            .append('<button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>')
+            .append('<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>')
             .append(document.createTextNode("No source files for synthesis."))
-            .appendTo($('#toolbar'))
-            .alert();
+            .appendTo($('#toolbar'));
         return;
     }
     const opts = {
@@ -674,7 +673,10 @@ function prepareFilesForSynthesis() {
 }
 
 function synthesizeAndRun() {
-    $('#synthesize-bar .query-alert').removeClass('fade').alert('close');
+    document.querySelectorAll('#synthesize-bar .query-alert').forEach(element => {
+        element.classList.remove('fade');
+        new bootstrap.Alert(element).close()
+    });
     $('form').find('input, textarea, button, select').prop('disabled', true);
     prepareFilesForSynthesis();
 }
