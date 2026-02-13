@@ -32,7 +32,7 @@ const examples = [
     ['ram', 'RAM'],
 ];
 
-$(window).on('load', () => {
+window.addEventListener('DOMContentLoaded', () => {
 
 Split({
     columnGutters: [{
@@ -256,7 +256,7 @@ class Circuit(Component):
     }
 }
 
-$('#newtab').on('click', function (e) {
+document.querySelector('#newtab').addEventListener('click', e => {
     const maybeFilename = $('#start input[name=newtabname]').val();
     const extension = $("#exten").data("extension");
     const initial = getDefaultContent(extension);
@@ -272,11 +272,12 @@ for (const [file, name] of examples) {
     });
 }
 
-$('#exten').parent().on('click', 'a', function (e) {
-    const ext = $(this).data('extension');
-    $('#exten')
-        .text("." + ext)
-        .data("extension", ext);
+document.querySelector('#extens').addEventListener('click', e => {
+    const link = e.target.closest('a');
+    if (!link) return;
+    const ext = link.dataset.extension;
+    document.querySelector('#exten').textContent = '.' + ext;
+    document.querySelector('#exten').dataset.extension = ext;
 });
 
 const droppable = new Droppable({
@@ -397,7 +398,7 @@ function mkcircuit(data, opts) {
         colMarkup: '<div class="col-sm-8 form-inline"></div>',
         buttonMarkup: '<div class="form-check"><input type="checkbox"></input></div>',
         lampMarkup: '<div class="form-check"><input type="checkbox"></input></div>',
-        inputMarkup: '<input type="text" class="mr-2">'
+        inputMarkup: '<input type="text" class="me-2">'
     });
     paper = circuit.displayOn($('<div>').appendTo($('#paper')));
     mk_markers(paper);
@@ -564,24 +565,28 @@ const synthesisStrategies = {
         });
     },
     server: (data, opts) => {
-        $.ajax({
-            type: 'POST',
-            url: '/api/yosys2digitaljs',
-            contentType: "application/json",
-            data: JSON.stringify({
+        fetch('/api/yosys2digitaljs', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
                 files: data,
                 options: opts
-            }),
-            dataType: 'json',
-            success: (responseData, status, xhr) => {
-                const circuit = responseData.output;
-                const lint = responseData.lint;
-                postSynthesis(circuit, lint);
-            },
-            error: (request, status, error) => {
-                showSynthesisError(request.responseJSON.error, request.responseJSON.yosys_stderr.trim(), []);
-            }
-        });
+            })
+        })
+        .then(res => {
+            if (!res.ok) return res.json().then(err => Promise.reject(err));
+            return res.json();
+        })
+        .then(responseData => {
+            const circuit = responseData.output;
+            const lint = responseData.lint;
+            postSynthesis(circuit, lint);
+        })
+        .catch(error => {
+            showSynthesisError(error.error, error.yosys_stderr?.trim(), []);
+        })
     }
 };
 
@@ -730,54 +735,65 @@ $('button[name=save]').click(e => {
     saveAs(blob, 'circuit.json');
 });
 
-$('button[name=link]')
-    .popover({
-        container: 'body',
-        content: 'blah',
-        trigger: 'manual',
-        html: true
-    })
-    .popover('disable')
-    .click(e => {
-        const json = circuit.toJSON();
-        $.ajax({
-            type: 'POST',
-            url: '/api/storeCircuit',
-            contentType: "application/json",
-            data: JSON.stringify(json),
-            dataType: 'json',
-            success: (responseData, status, xhr) => {
-                history.replaceState(null, null, '#'+responseData);
-                $(e.target)
-                    .attr('data-content', '<div class="btn-toolbar"><div class="input-group mr-2"><input readonly="readonly" id="linkinput" type="text" value="' + window.location.href + '"></div><div class="btn-group mr-2"><button type="button" data-clipboard-target="#linkinput" class="btn clipboard btn-secondary">Copy link</button></div></div>')
-                    .popover('enable')
-                    .popover('show');
-            }
-        });
-    })
-    .on("hidden.bs.popover", function() { $(this).popover('disable') });
+const linkBtn = document.querySelector('button[name=link]');
 
-$('html').click(e => {
-    if (!$(e.target).closest('button[name=link]').length &&
-        !$(e.target).closest('.popover').length)
-        $('button[name=link]').popover('hide');
+const linkBtnPopover = new bootstrap.Popover(linkBtn, {
+    container: 'body',
+    content: 'blah',
+    trigger: 'manual',
+    html: true,
+    sanitize: false
+});
+
+linkBtnPopover.disable();
+
+linkBtn.addEventListener('click', e => {
+    const json = circuit.toJSON();
+    fetch('/api/storeCircuit', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(json)
+    })
+    .then(res => {
+        if (!res.ok) return res.json().then(err => Promise.reject(err));
+        return res.json();
+    })
+    .then(responseData => {
+        history.replaceState(null, null, '#'+responseData);
+        linkBtnPopover.setContent({'.popover-body': 
+            '<div class="btn-toolbar"><div class="input-group me-2"><input readonly="readonly" id="linkinput" type="text" value="' + window.location.href + '"></div><div class="btn-group me-2"><button type="button" data-clipboard-target="#linkinput" class="btn clipboard btn-secondary">Copy link</button></div></div>'
+        });
+        linkBtnPopover.enable();
+        linkBtnPopover.show();
+    });
+});
+
+linkBtn.addEventListener("hidden.bs.popover", () => { linkBtnPopover.disable(); });
+
+document.addEventListener('click', e => {
+    if (!e.target.closest('button[name=link]') && !e.target.closest('.popover'))
+        linkBtnPopover.hide();
 });
 
 window.onpopstate = () => {
     const hash = window.location.hash.slice(1);
     if (loading || !hash) return;
     destroycircuit();
-    $.ajax({
-        type: 'GET',
-        url: '/api/circuit/' + hash,
-        dataType: 'json',
-        success: (responseData, status, xhr) => {
-            mkcircuit(responseData);
-        },
-        error: (request, status, error) => {
-            loading = false;
-            updatebuttons();
-        }
+    fetch('/api/circuit/' + hash, {
+        method: 'GET'
+    })
+    .then(res => {
+        if (!res.ok) return res.json().then(err => Promise.reject(err));
+        return res.json();
+    })
+    .then(responseData => {
+        mkcircuit(responseData);
+    })
+    .catch(error => {
+        loading = false;
+        updatebuttons();
     });
 };
 
@@ -788,8 +804,6 @@ if (window.location.hash.slice(1))
     window.onpopstate();
 
 new ClipboardJS('button.clipboard');
-
-$('[data-bs-toggle="tooltip"]').tooltip();
 
 });
 
