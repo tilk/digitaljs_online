@@ -124,11 +124,11 @@ function make_tab(maybeFilename, extension, content) {
         .attr('aria-controls', name)
         .text(filename + '.' + extension)
         .appendTo($('#editor-tab > nav div'));
-    $('<button class="close closeTab" type="button">×</button>')
-        .on('click', function (e) { close_tab(tab); })
-        .appendTo(tab);
-    $('<button class="close closeTab" type="button">📥</button>')
+    $('<button class="btn-custom closeTab" type="button">📥</button>')
         .on('click', function (e) { download_tab(tab, filename, extension); })
+        .appendTo(tab);
+    $('<button class="btn-close closeTab" type="button"></button>')
+        .on('click', function (e) { close_tab(tab); })
         .appendTo(tab);
     const panel = $('<div role="tabpanel" class="tab-pane">')
         .attr('id', name)
@@ -393,9 +393,9 @@ function mkcircuit(data, opts) {
     monitorview = new digitaljs.MonitorView({model: monitor, el: $('#monitor') });
     iopanel = new digitaljs.IOPanelView({
         model: circuit, el: $('#iopanel'),
-        rowMarkup: '<div class="form-group row"></div>',
+        rowMarkup: '<div class="mb-3 row"></div>',
         labelMarkup: '<label class="col-sm-4 control-label"></label>',
-        colMarkup: '<div class="col-sm-8 form-inline"></div>',
+        colMarkup: '<div class="col-sm-8"></div>',
         buttonMarkup: '<div class="form-check"><input type="checkbox"></input></div>',
         lampMarkup: '<div class="form-check"><input type="checkbox"></input></div>',
         inputMarkup: '<input type="text" class="me-2">'

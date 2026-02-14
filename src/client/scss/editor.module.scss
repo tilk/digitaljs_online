@@ -39,9 +39,17 @@ div.editor-tab >div.tab-content {
     }
 }
 
+.btn-custom {
+    @extend .symbola;
+    @extend .btn-close;
+    background: none;
+    line-height: 1;
+    padding: 0;
+    font-size: 1.4rem;
+}
+
 nav .nav-item button.closeTab {
     @extend .ms-1;
-    @extend .symbola;
 }
 
 nav .nav-item:not(.active) button.closeTab {
