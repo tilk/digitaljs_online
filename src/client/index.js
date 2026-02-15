@@ -543,7 +543,7 @@ function showSynthesisError(errorTitle, details, lint) {
     });
     const pre = document.createElement('pre');
     pre.textContent = details;
-    query('#toolbar').append(make_alert('danger', document.createTextNode(errorTitle), pre));
+    query('#paper').append(make_alert('danger', document.createTextNode(errorTitle), pre));
 }
 
 let synthesisWorker = null;
@@ -608,7 +608,7 @@ const synthesisStrategies = {
 
 function synthesize(files) {
     if (Object.keys(files).length == 0) {
-        query('#toolbar').append(make_alert('danger', document.createTextNode("No source files for synthesis.")));
+        query('#paper').append(make_alert('danger', document.createTextNode("No source files for synthesis.")));
         return;
     }
     const opts = {
