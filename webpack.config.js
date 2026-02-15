@@ -3,7 +3,7 @@ import { fileURLToPath } from "url";
 import { createRequire } from "module";
 
 import HtmlWebpackPlugin from "html-webpack-plugin";
-import CleanWebpackPlugin from "clean-webpack-plugin";
+import { CleanWebpackPlugin } from "clean-webpack-plugin";
 import CopyWebpackPlugin from 'copy-webpack-plugin';
 import MiniCssExtractPlugin from "mini-css-extract-plugin";
 import HtmlWebpackInlineSVGPlugin from 'html-webpack-inline-svg-plugin';
@@ -71,9 +71,11 @@ export default (env, argv) => {
         devServer: {
             port: 3000,
             open: true,
-            proxy: {
-                "/api": "http://localhost:8080"
-            }
+            proxy: [{
+                router: {
+                    "/api": "http://localhost:8080"
+                }
+            }]
         },
         plugins: [
             new CleanWebpackPlugin(),
