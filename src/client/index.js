@@ -10,7 +10,6 @@ import 'codemirror/mode/python/python.js';
 import 'codemirror/lib/codemirror.css';
 import 'codemirror/addon/lint/lint.css';
 import CodeMirror from 'codemirror/lib/codemirror.js';
-import $ from 'jquery';
 import * as digitaljs from 'digitaljs';
 import * as digitaljs_lua from 'digitaljs_lua';
 import Split from 'split-grid';
@@ -115,7 +114,7 @@ function close_tab (tab_a)
 }
 
 function find_filename(name) {
-    const list = $('#editor-tab > .tab-content > .tab-pane').filter((_, el) => $(el).data('fullname') == name);
+    const list = [...queryAll('#editor-tab > .tab-content > .tab-pane')].filter(el => el.dataset.fullname == name);
     if (list.length == 0) return;
     return list[0].id;
 }
@@ -128,8 +127,8 @@ function make_tab(maybeFilename, extension, content) {
 
     const orig_filename = filename;
     let fcnt = 0;
-    while ($('#editor-tab > .tab-content > .tab-pane')
-            .filter((_, el) => $(el).data('filename') == filename && $(el).data('extension') == extension).length) {
+    while ([...queryAll('#editor-tab > .tab-content > .tab-pane')]
+            .filter(el => el.dataset.filename == filename && el.dataset.extension == extension).length) {
         filename = orig_filename + fcnt++;
     }
     const name = "file" + cnt++;
@@ -406,7 +405,7 @@ function mkcircuit(data, opts) {
     });
     circuit = new digitaljs.Circuit(data, opts);
     circuit.on('postUpdateGates', (tick) => {
-        $('#tick').val(tick);
+        query('#tick').value = tick;
     });
     circuit.start();
     monitor = new digitaljs.Monitor(circuit);
@@ -414,9 +413,9 @@ function mkcircuit(data, opts) {
         monitor.loadWiresDesc(monitormem);
         monitormem = undefined;
     }
-    monitorview = new digitaljs.MonitorView({model: monitor, el: $('#monitor') });
+    monitorview = new digitaljs.MonitorView({model: monitor, el: query('#monitor') });
     iopanel = new digitaljs.IOPanelView({
-        model: circuit, el: $('#iopanel'),
+        model: circuit, el: query('#iopanel'),
         rowMarkup: '<div class="mb-3 row"></div>',
         labelMarkup: '<label class="col-sm-4 control-label"></label>',
         colMarkup: '<div class="col-sm-8"></div>',
@@ -424,11 +423,13 @@ function mkcircuit(data, opts) {
         lampMarkup: '<div class="form-check"><input type="checkbox"></input></div>',
         inputMarkup: '<input type="text" class="me-2">'
     });
-    paper = circuit.displayOn($('<div>').appendTo($('#paper')));
+    const targetDiv = document.createElement('div');
+    query('#paper').append(targetDiv);
+    paper = circuit.displayOn(targetDiv);
     mk_markers(paper);
     circuit.on('new:paper', (paper) => { mk_markers(paper); });
     for (const name of Object.keys(editors)) {
-        if ($('#' + name).data('extension') == 'lua') 
+        if (query('#' + name).dataset.extension == 'lua') 
             make_luarunner(name, circuit);
     }
     circuit.on('userChange', () => {
@@ -650,12 +651,12 @@ function processFiles() {
     const synthesizableExtensions = new Set(['sv', 'v', 'vh', 'py']);
     const data = {};
     for (const [name, editor] of Object.entries(editors)) {
-        const panel = $('#' + name);
-        const extension = panel.data("extension");
+        const panel = query('#' + name);
+        const extension = panel.dataset.extension;
 
         if (!synthesizableExtensions.has(extension)) continue;
 
-        data[panel.data("filename") + "." + extension] = editor.getValue();
+        data[panel.dataset.filename + "." + extension] = editor.getValue();
         editor._is_dirty = false;
     }
     for (const [filename, file] of Object.entries(filedata)) {
