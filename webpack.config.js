@@ -3,7 +3,7 @@ import { fileURLToPath } from "url";
 import { createRequire } from "module";
 
 import HtmlWebpackPlugin from "html-webpack-plugin";
-import CleanWebpackPlugin from "clean-webpack-plugin";
+import { CleanWebpackPlugin } from "clean-webpack-plugin";
 import CopyWebpackPlugin from 'copy-webpack-plugin';
 import MiniCssExtractPlugin from "mini-css-extract-plugin";
 import HtmlWebpackInlineSVGPlugin from 'html-webpack-inline-svg-plugin';
@@ -47,18 +47,11 @@ export default (env, argv) => {
                 },
                 {
                     test: /\.scss$/,
-                    use: [devMode ? "style-loader" : MiniCssExtractPlugin.loader, "css-loader", "sass-loader"]
+                    use: [devMode ? "style-loader" : MiniCssExtractPlugin.loader, "css-loader", {loader: 'sass-loader', options: {sassOptions: {quietDeps: true}}}]
                 },
                 {
                     test: /\.(png|woff|woff2|eot|ttf|svg)$/,
                     type: 'asset'
-                },
-                {
-                    test: require.resolve('jquery'),
-                    loader: 'expose-loader',
-                    options: {
-                        exposes: ['$']
-                    }
                 },
                 {
                     test: /\.svg$/,
@@ -71,9 +64,11 @@ export default (env, argv) => {
         devServer: {
             port: 3000,
             open: true,
-            proxy: {
-                "/api": "http://localhost:8080"
-            }
+            proxy: [{
+                router: {
+                    "/api": "http://localhost:8080"
+                }
+            }]
         },
         plugins: [
             new CleanWebpackPlugin(),

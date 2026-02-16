@@ -1,7 +1,6 @@
 "use strict";
 
-import 'popper.js';
-import 'bootstrap';
+import * as bootstrap from 'bootstrap';
 import Droppable from 'droppable';
 import ClipboardJS from 'clipboard';
 import './scss/app.scss';
@@ -10,9 +9,7 @@ import 'codemirror/mode/lua/lua.js';
 import 'codemirror/mode/python/python.js';
 import 'codemirror/lib/codemirror.css';
 import 'codemirror/addon/lint/lint.css';
-import 'bootstrap/js/src/tab.js';
 import CodeMirror from 'codemirror/lib/codemirror.js';
-import $ from 'jquery';
 import * as digitaljs from 'digitaljs';
 import * as digitaljs_lua from 'digitaljs_lua';
 import Split from 'split-grid';
@@ -34,60 +31,67 @@ const examples = [
     ['ram', 'RAM'],
 ];
 
-$(window).on('load', () => {
+const html = (strings, ...values) => {
+  const template = document.createElement('template');
+  template.innerHTML = String.raw(strings, ...values).trim();
+  return template.content.firstElementChild;
+};
+
+const $ = (sel, root = document) => root.querySelector(sel);
+const $$ = (sel, root = document) => root.querySelectorAll(sel);
+
+window.addEventListener('DOMContentLoaded', () => {
 
 Split({
     columnGutters: [{
-        element: document.querySelector('#gutter_horiz'),
+        element: $('#gutter_horiz'),
         track: 1
     }],
     rowGutters: [{
-        element: document.querySelector('#gutter_vert'),
+        element: $('#gutter_vert'),
         track: 1
     }],
     columnMinSize: '100px',
     columnSnapOffset: 0
 });
 
-$('#editor-tab > nav').on('click', 'a', function (e) {
-    e.preventDefault();
-    $(this).tab('show');
-});
-
 let cnt = 0;
 let editors = {}, helpers = {};
 
+function make_alert(type, ...content) {
+    const elem = html`<div class="query-alert alert alert-${type} alert-dismissible fade show" role="alert"></div>`;
+    elem.append(html`<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>`);
+    content.forEach(el => { elem.append(el) });
+    return elem;
+}
+
 function handle_luaerror(name, e) {
-    $('<div class="query-alert alert alert-danger alert-dismissible fade show" role="alert"></div>')
-        .append('<button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>')
-        .append($("<pre>").text(e.luaMessage))
-        .appendTo($('#' + name).find("> div:last-child > div:last-child"))
-        .alert();
+    const pre = document.createElement('pre');
+    pre.textContent = e.luaMessage;
+    $('#' + name + " > div:last-child > div:last-child").append(make_alert('danger', pre));
 }
 
 function make_luarunner(name, circuit) {
     helpers[name] = new digitaljs_lua.LuaRunner(circuit); 
     helpers[name].on('thread:stop', (pid) => {
         const panel = $('#' + name);
-        panel.find('textarea').prop('disabled', false);
-        panel.find('button[name=luarun]').prop('disabled', false);
-        panel.find('button[name=luastop]').prop('disabled', true);
+        panel.querySelector('textarea').disabled = false;
+        panel.querySelector('button[name=luarun]').disabled = false;
+        panel.querySelector('button[name=luastop]').disabled = true;
     });
     helpers[name].on('thread:error', (pid, e) => {
         handle_luaerror(name, e);
     });
     helpers[name].on('print', msgs => {
-        $('<div class="query-alert alert alert-info alert-dismissible fade show" role="alert"></div>')
-            .append('<button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>')
-            .append($("<pre>").text(msgs.join('\t')))
-            .appendTo($('#' + name).find('> div:last-child > div:last-child'))
-            .alert();
+        const pre = document.createElement('pre');
+        pre.textContent = msgs.join('\t');
+        $('#' + name + '> div:last-child > div:last-child').append(make_alert('info', pre));
     });
 }
 
 function download_tab (tab_a, filename, extension)
 {
-    var tabContentId = $(tab_a).attr("href");
+    var tabContentId = tab_a.getAttribute("href");
     const name = tabContentId.substring(1);
     const blob = new Blob([editors[name].getValue()], {type: "text/plain;charset=utf-8"});
     saveAs(blob, filename + "." + extension);
@@ -95,11 +99,12 @@ function download_tab (tab_a, filename, extension)
 
 function close_tab (tab_a)
 {
-    var tabContentId = $(tab_a).attr("href");
-    var li_list = $(tab_a).parent();
-    $(tab_a).remove(); //remove li of tab
-    if ($(tabContentId).is(":visible")) {
-        li_list.find("a").eq(0).tab('show'); // Select first tab
+    var tabContentId = tab_a.getAttribute("href");
+    var li_list = tab_a.parentElement;
+    tab_a.remove(); //remove li of tab
+    if (window.getComputedStyle($(tabContentId)).display !== 'none') {
+        const bs_tab = new bootstrap.Tab(li_list.querySelector("a"));
+        bs_tab.show(); // Select first tab
     }
     $(tabContentId).remove(); //remove respective tab content
     const name = tabContentId.substring(1);
@@ -109,7 +114,7 @@ function close_tab (tab_a)
 }
 
 function find_filename(name) {
-    const list = $('#editor-tab > .tab-content > .tab-pane').filter((_, el) => $(el).data('fullname') == name);
+    const list = [...$$('#editor-tab > .tab-content > .tab-pane')].filter(el => el.dataset.fullname == name);
     if (list.length == 0) return;
     return list[0].id;
 }
@@ -122,53 +127,59 @@ function make_tab(maybeFilename, extension, content) {
 
     const orig_filename = filename;
     let fcnt = 0;
-    while ($('#editor-tab > .tab-content > .tab-pane')
-            .filter((_, el) => $(el).data('filename') == filename && $(el).data('extension') == extension).length) {
+    while ([...$$('#editor-tab > .tab-content > .tab-pane')]
+            .filter(el => el.dataset.filename == filename && el.dataset.extension == extension).length) {
         filename = orig_filename + fcnt++;
     }
     const name = "file" + cnt++;
-    const tab = $('<a class="nav-item nav-link" role="tab" data-toggle="tab" aria-selected="false">')
-        .attr('href', '#' + name)
-        .attr('aria-controls', name)
-        .text(filename + '.' + extension)
-        .appendTo($('#editor-tab > nav div'));
-    $('<button class="close closeTab" type="button">×</button>')
-        .on('click', function (e) { close_tab(tab); })
-        .appendTo(tab);
-    $('<button class="close closeTab" type="button">📥</button>')
-        .on('click', function (e) { download_tab(tab, filename, extension); })
-        .appendTo(tab);
-    const panel = $('<div role="tabpanel" class="tab-pane">')
-        .attr('id', name)
-        .attr('data-filename', filename)
-        .attr('data-extension', extension)
-        .attr('data-fullname', filename + '.' + extension)
-        .appendTo($('#editor-tab > .tab-content'));
-    const ed_div = $('<textarea>').val(content).appendTo(panel);
-    $(tab).tab('show');
+    const tab = html`<a class="nav-item nav-link" role="tab" data-bs-toggle="tab" aria-selected="false">`;
+    tab.setAttribute('href', '#' + name);
+    tab.setAttribute('aria-controls', name);
+    tab.textContent = filename + '.' + extension;
+    $('#editor-tab > nav div').append(tab);
+    const download_btn = html`<button class="btn-custom closeTab" type="button">📥</button>`;
+    download_btn.addEventListener('click', e => { download_tab(tab, filename, extension); });
+    tab.append(download_btn);
+    const close_btn = html`<button class="btn-close closeTab" type="button"></button>`;
+    close_btn.addEventListener('click', e => { close_tab(tab); });
+    tab.append(close_btn);
+    const panel = html`<div role="tabpanel" class="tab-pane">`;
+    panel.setAttribute('id', name);
+    panel.setAttribute('data-filename', filename);
+    panel.setAttribute('data-extension', extension);
+    panel.setAttribute('data-fullname', filename + '.' + extension);
+    $('#editor-tab > .tab-content').append(panel);
+    const ed_div = document.createElement('textarea');
+    ed_div.value = content;
+    panel.append(ed_div);
+    const bs_tab = new bootstrap.Tab(tab);
+    bs_tab.show();
     // Lua scripting support
     if (extension == 'lua') {
-        const panel2 = $('<div>')
-            .appendTo(panel);
-        ed_div.appendTo(panel2);
-        $('<div class="tab-padded"></div>').appendTo(panel2);
-        panel.addClass("tab-withbar");
+        const panel2 = document.createElement('div');
+        panel.append(panel2);
+        panel2.append(ed_div);
+        panel2.append(html`<div class="tab-padded"></div>`);
+        panel.classList.add("tab-withbar");
         // TODO: bar always on top of the tab
-        const bar = $(`
-            <div class="btn-toolbar" role="toolbar">
+        const bar = html`
+            <div class="btn-toolbar nav" role="toolbar">
              <div class="btn-group" role="group">
               <button name="luarun" type="button" class="btn btn-secondary" disabled>Run</button>
               <button name="luastop" type="button" class="btn btn-secondary" disabled>Stop</button>
              </div>
              <a class="nav-link" href="https://tilk.github.io/digitaljs_lua/USAGE" target="_blank">API reference</a>
-            </div>`)
-            .prependTo(panel);
+            </div>`;
+        panel.prepend(bar);
         if (circuit) {
-            bar.find('button[name=luarun]').prop('disabled', false);
+            bar.querySelector('button[name=luarun]').disabled = false;
             make_luarunner(name, circuit);
         }
-        bar.find('button[name=luarun]').on('click', () => {
-            panel.find(".query-alert").removeClass('fade').alert('close');
+        bar.querySelector('button[name=luarun]').addEventListener('click', () => {
+            panel.querySelectorAll('.query-alert').forEach(element => {
+                element.classList.remove('fade');
+                new bootstrap.Alert(element).close()
+            });
             let pid;
             try {
                 pid = helpers[name].runThread(editors[name].getValue());
@@ -184,25 +195,25 @@ function make_tab(maybeFilename, extension, content) {
                 bar.find('button[name=luastop]').prop('disabled', false);
             }
         });
-        bar.find('button[name=luastop]').on('click', () => {
+        bar.querySelector('button[name=luastop]').addEventListener('click', () => {
             const pid = bar.data('pid');
             if (helpers[name].isThreadRunning(pid))
                 helpers[name].stopThread(pid);
         });
     } else if (extension == 'py') {
-        const panel2 = $('<div>')
-            .appendTo(panel);
-        ed_div.appendTo(panel2);
-        $('<div class="tab-padded"></div>').appendTo(panel2);
-        panel.addClass("tab-withbar");
-        const bar = $(`
-            <div class="btn-toolbar" role="toolbar">
+        const panel2 = document.createElement('div');
+        panel.append(panel2);
+        panel2.append(ed_div);
+        panel2.append(html`<div class="tab-padded"></div>`);
+        panel.classList.add("tab-withbar");
+        const bar = html`
+            <div class="navbar navbar-expand-lg" role="toolbar">
              <div class="btn-group" role="group">
               <button name="pyrun" type="button" class="btn btn-secondary">Clear Python environment</button>
              </div>
-            </div>`)
-            .prependTo(panel);
-        bar.find('button[name=pyrun]').on('click', () => {
+            </div>`;
+        panel.prepend(bar);
+        bar.querySelector('button[name=pyrun]').addEventListener('click', () => {
             if (amaranthWorker !== null) {
                 getAmaranthWorker().postMessage({type: 'resetEnvironment'});
             }
@@ -222,7 +233,7 @@ function make_tab(maybeFilename, extension, content) {
         }
     };
 
-    const editor = CodeMirror.fromTextArea(ed_div[0], {
+    const editor = CodeMirror.fromTextArea(ed_div, {
         lineNumbers: true,
         mode: { name: 'text' },
         gutters: ['CodeMirror-lint-markers'],
@@ -260,31 +271,37 @@ class Circuit(Component):
     }
 }
 
-$('#newtab').on('click', function (e) {
-    const maybeFilename = $('#start input[name=newtabname]').val();
-    const extension = $("#exten").data("extension");
+$('#newtab').addEventListener('click', e => {
+    const maybeFilename = $('#start input[name=newtabname]').value;
+    const extension = $("#exten").dataset.extension;
     const initial = getDefaultContent(extension);
     make_tab(maybeFilename, extension, initial);
 });
 
 for (const [file, name] of examples) {
-    $('<a class="dropdown-item" href="">').text(name).appendTo($('#excodes')).click((e) => {
+    const link = html`<a class="dropdown-item" href="">`;
+    link.textContent = name;
+    $('#excodes').append(link);
+    link.addEventListener('click', e => {
         e.preventDefault();
-        $.get('/examples/' + file + '.sv', (data, status) => {
+        fetch('/examples/' + file + '.sv')
+            .then(res => res.text())
+            .then(data => {
             make_tab(file, 'sv', data);
         });
     });
 }
 
-$('#exten').parent().on('click', 'a', function (e) {
-    const ext = $(this).data('extension');
-    $('#exten')
-        .text("." + ext)
-        .data("extension", ext);
+$('#extens').addEventListener('click', e => {
+    const link = e.target.closest('a');
+    if (!link) return;
+    const ext = link.dataset.extension;
+    $('#exten').textContent = '.' + ext;
+    $('#exten').dataset.extension = ext;
 });
 
 const droppable = new Droppable({
-    element: document.querySelector('#dropzone')
+    element: $('#dropzone')
 });
 
 droppable.onFilesDropped((files) => {
@@ -303,25 +320,26 @@ droppable.onFilesDropped((files) => {
 let loading = false, circuit, paper, monitor, monitorview, monitormem, iopanel, filedata, filenum;
 
 function updatebuttons() {
+    const toolbar = $('#toolbar');
     if (circuit == undefined) {
-        $('.upper-toolbar-group').find('button').prop('disabled', true);
-        $('button.circuit-tab').prop('disabled', true);
-        $('.zoom-buttons-wrapper').addClass('d-none');
-        if (!loading) $('#toolbar').find('button[name=load]').prop('disabled', false);
+        toolbar.querySelectorAll('button:not([name=synthesize-btn])').forEach(elem => { elem.disabled = true; });
+        $$('button.circuit-tab').forEach(elem => { elem.disabled = true; });
+        $('.zoom-buttons-wrapper').classList.add('d-none');
+        if (!loading) toolbar.querySelector('button[name=load]').disabled = false;
         return;
     }
-    $('#toolbar').find('button[name=load]').prop('disabled', false);
-    $('#toolbar').find('button[name=save]').prop('disabled', false);
-    $('#toolbar').find('button[name=link]').prop('disabled', false);
+    toolbar.querySelector('button[name=load]').disabled = false;
+    toolbar.querySelector('button[name=save]').disabled = false;
+    toolbar.querySelector('button[name=link]').disabled = false;
     const running = circuit.running;
-    $('#toolbar').find('button[name=pause]').prop('disabled', !running);
-    $('#toolbar').find('button[name=resume]').prop('disabled', running);
-    $('#toolbar').find('button[name=single]').prop('disabled', running);
-    $('#toolbar').find('button[name=next]').prop('disabled', running || !circuit.hasPendingEvents);
-    $('#toolbar').find('button[name=fastfw]').prop('disabled', running);
+    toolbar.querySelector('button[name=pause]').disabled = !running;
+    toolbar.querySelector('button[name=resume]').disabled = running;
+    toolbar.querySelector('button[name=single]').disabled = running;
+    toolbar.querySelector('button[name=next]').disabled = running || !circuit.hasPendingEvents;
+    toolbar.querySelector('button[name=fastfw]').disabled = running;
     monitorview.autoredraw = !running;
-    $('button.circuit-tab').prop('disabled', false);
-    $('.zoom-buttons-wrapper').removeClass('d-none');
+    $$('button.circuit-tab').forEach(elem => { elem.disabled = false; });
+    $('.zoom-buttons-wrapper').classList.remove('d-none');
 }
 
 function destroycircuit() {
@@ -352,11 +370,11 @@ function destroycircuit() {
     for (const h of Object.values(helpers)) {
         h.shutdown();
     }
-    $('#editor-tab > .tab-content > div[data-extension=lua] button').prop('disabled', true);
+    $$('#editor-tab > .tab-content > div[data-extension=lua] button').forEach(elem => { elem.disabled = true; });
     helpers = {};
     loading = true;
     updatebuttons();
-    $('#monitorbox button').prop('disabled', true).off();
+    $$('#monitorbox button').forEach(btn => { btn.disabled = true; });
 }
 
 function mk_markers(paper) {
@@ -382,10 +400,12 @@ function mk_markers(paper) {
 
 function mkcircuit(data, opts) {
     loading = false;
-    $('form').find('input, textarea, button, select').prop('disabled', false);
+    $$('form input, form textarea, form button, form select').forEach(element => {
+        element.disabled = false;
+    });
     circuit = new digitaljs.Circuit(data, opts);
     circuit.on('postUpdateGates', (tick) => {
-        $('#tick').val(tick);
+        $('#tick').value = tick;
     });
     circuit.start();
     monitor = new digitaljs.Monitor(circuit);
@@ -396,18 +416,20 @@ function mkcircuit(data, opts) {
     monitorview = new digitaljs.MonitorView({model: monitor, el: $('#monitor') });
     iopanel = new digitaljs.IOPanelView({
         model: circuit, el: $('#iopanel'),
-        rowMarkup: '<div class="form-group row"></div>',
+        rowMarkup: '<div class="mb-3 row"></div>',
         labelMarkup: '<label class="col-sm-4 control-label"></label>',
-        colMarkup: '<div class="col-sm-8 form-inline"></div>',
+        colMarkup: '<div class="col-sm-8"></div>',
         buttonMarkup: '<div class="form-check"><input type="checkbox"></input></div>',
         lampMarkup: '<div class="form-check"><input type="checkbox"></input></div>',
-        inputMarkup: '<input type="text" class="mr-2">'
+        inputMarkup: '<input type="text" class="me-2">'
     });
-    paper = circuit.displayOn($('<div>').appendTo($('#paper')));
+    const targetDiv = document.createElement('div');
+    $('#paper').append(targetDiv);
+    paper = circuit.displayOn(targetDiv);
     mk_markers(paper);
     circuit.on('new:paper', (paper) => { mk_markers(paper); });
     for (const name of Object.keys(editors)) {
-        if ($('#' + name).data('extension') == 'lua') 
+        if ($('#' + name).dataset.extension == 'lua') 
             make_luarunner(name, circuit);
     }
     circuit.on('userChange', () => {
@@ -417,34 +439,25 @@ function mkcircuit(data, opts) {
         updatebuttons();
     });
     updatebuttons();
-    $('#editor-tab > .tab-content > div[data-extension=lua] button[name=luarun]').prop('disabled', false);
-    $('#monitorbox button').prop('disabled', false);
-    $('#monitorbox button[name=ppt_up]').on('click', (e) => { monitorview.pixelsPerTick *= 2; });
-    $('#monitorbox button[name=ppt_down]').on('click', (e) => { monitorview.pixelsPerTick /= 2; });
-    $('#monitorbox button[name=left]').on('click', (e) => { 
-        monitorview.live = false; monitorview.start -= monitorview.width / monitorview.pixelsPerTick / 4;
+    $$('#editor-tab > .tab-content > div[data-extension=lua] button[name=luarun]')
+        .forEach(btn => { btn.disabled = false; });
+    $$('#monitorbox button')
+        .forEach(btn => { btn.disabled = false; });
+    $('#monitorbox button[name=live]').classList.toggle('active', monitorview.live)
+    monitorview.on('change:live', (live) => { 
+        $('#monitorbox button[name=live]').classList.toggle('active', live);
     });
-    $('#monitorbox button[name=right]').on('click', (e) => { 
-        monitorview.live = false; monitorview.start += monitorview.width / monitorview.pixelsPerTick / 4;
-    });
-    $('#monitorbox button[name=live]')
-        .toggleClass('active', monitorview.live)
-        .on('click', (e) => { 
-            monitorview.live = !monitorview.live;
-            if (monitorview.live) monitorview.start = circuit.tick - monitorview.width / monitorview.pixelsPerTick;
-        });
-    monitorview.on('change:live', (live) => { $('#monitorbox button[name=live]').toggleClass('active', live) });
     monitor.on('add', () => {
-        if ($('#monitorbox').height() == 0) {
-            $('.grid').addClass('monitor-open');
+        if ($('#monitorbox').getBoundingClientRect().height == 0) {
+            $('.grid').classList.add('monitor-open');
         }
     });
     const show_range = () => {
-        $('#monitorbox input[name=rangel]').val(Math.round(monitorview.start));
-        $('#monitorbox input[name=rangeh]').val(Math.round(monitorview.start + monitorview.width / monitorview.pixelsPerTick));
+        $('#monitorbox input[name=rangel]').value = Math.round(monitorview.start);
+        $('#monitorbox input[name=rangeh]').value = Math.round(monitorview.start + monitorview.width / monitorview.pixelsPerTick);
     };
     const show_scale = () => {
-        $('#monitorbox input[name=scale]').val(monitorview.gridStep);
+        $('#monitorbox input[name=scale]').value = monitorview.gridStep;
     };
     show_range();
     show_scale();
@@ -452,18 +465,18 @@ function mkcircuit(data, opts) {
     monitorview.on('change:pixelsPerTick', show_scale);
 
     let paperScale = 0;
-    $('button[name=zoom-in]').click(e => {
+    $('button[name=zoom-in]').addEventListener('click', e => {
         paperScale++;
         circuit.scaleAndRefreshPaper(paper, paperScale);
      });
 
-    $('button[name=zoom-out]').click(e => {
+    $('button[name=zoom-out]').addEventListener('click', e => {
         paperScale--;
         circuit.scaleAndRefreshPaper(paper, paperScale);
     });
 
     paper.on('scale', (currentScale) => {
-       $('button[name=zoom-in]').prop('disabled', currentScale >= 5);
+       $('button[name=zoom-in]').disabled = currentScale >= 5;
     });
 }
 
@@ -475,7 +488,7 @@ function makeLintMarker(cm, labels, severity, multiple) {
         inner.className = "CodeMirror-lint-marker CodeMirror-lint-marker-multiple";
     }
     let text = labels.join("\n");
-    $(inner).tooltip({
+    const tooltip = new bootstrap.Tooltip(inner, {
         title: text
     });
 
@@ -508,9 +521,9 @@ function updateLint(lint) {
 }
 
 function postSynthesis(circuit, lint) {
-    const transform = $('#transform').prop('checked');
-    const layoutEngine = $('#layout').val();
-    const simEngine = $('#engine').val();
+    const transform = $('#transform').checked;
+    const layoutEngine = $('#layout').value;
+    const simEngine = $('#engine').value;
     const engines = { synch: digitaljs.engines.BrowserSynchEngine, worker: digitaljs.engines.WorkerEngine };
 
     if (transform) digitaljs.transform.transformCircuit(circuit)
@@ -525,13 +538,12 @@ function showSynthesisError(errorTitle, details, lint) {
     loading = false;
     updatebuttons();
     updateLint(lint);
-    $('form').find('input, textarea, button, select').prop('disabled', false);
-    $('<div class="query-alert alert alert-danger alert-dismissible fade show" role="alert"></div>')
-        .append('<button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>')
-        .append(document.createTextNode(errorTitle))
-        .append($("<pre>").text(details))
-        .appendTo($('#toolbar'))
-        .alert();
+    $$('form input, form textarea, form button, form select').forEach(element => {
+        element.disabled = false;
+    });
+    const pre = document.createElement('pre');
+    pre.textContent = details;
+    $('#paper').append(make_alert('danger', document.createTextNode(errorTitle), pre));
 }
 
 let synthesisWorker = null;
@@ -569,45 +581,45 @@ const synthesisStrategies = {
         });
     },
     server: (data, opts) => {
-        $.ajax({
-            type: 'POST',
-            url: '/api/yosys2digitaljs',
-            contentType: "application/json",
-            data: JSON.stringify({
+        fetch('/api/yosys2digitaljs', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
                 files: data,
                 options: opts
-            }),
-            dataType: 'json',
-            success: (responseData, status, xhr) => {
-                const circuit = responseData.output;
-                const lint = responseData.lint;
-                postSynthesis(circuit, lint);
-            },
-            error: (request, status, error) => {
-                showSynthesisError(request.responseJSON.error, request.responseJSON.yosys_stderr.trim(), []);
-            }
-        });
+            })
+        })
+        .then(res => {
+            if (!res.ok) return res.json().then(err => Promise.reject(err));
+            return res.json();
+        })
+        .then(responseData => {
+            const circuit = responseData.output;
+            const lint = responseData.lint;
+            postSynthesis(circuit, lint);
+        })
+        .catch(error => {
+            showSynthesisError(error.error, error.yosys_stderr?.trim(), []);
+        })
     }
 };
 
 function synthesize(files) {
     if (Object.keys(files).length == 0) {
-        $('<div class="query-alert alert alert-danger alert-dismissible fade show" role="alert"></div>')
-            .append('<button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>')
-            .append(document.createTextNode("No source files for synthesis."))
-            .appendTo($('#toolbar'))
-            .alert();
+        $('#paper').append(make_alert('danger', document.createTextNode("No source files for synthesis.")));
         return;
     }
     const opts = {
-        optimize: $('#opt').prop('checked'),
-        fsm: $('#fsm').val(),
-        fsmexpand: $('#fsmexpand').prop('checked'),
-        lint: $('#lint').prop('checked')
+        optimize: $('#opt').checked,
+        fsm: $('#fsm').value,
+        fsmexpand: $('#fsmexpand').checked,
+        lint: $('#lint').checked
     };
     destroycircuit();
 
-    const synthesisMode = $('#synthesis-mode').val();
+    const synthesisMode = $('#synthesis-mode').value;
 
     synthesisStrategies[synthesisMode](files, opts);
 }
@@ -640,11 +652,11 @@ function processFiles() {
     const data = {};
     for (const [name, editor] of Object.entries(editors)) {
         const panel = $('#' + name);
-        const extension = panel.data("extension");
+        const extension = panel.dataset.extension;
 
         if (!synthesizableExtensions.has(extension)) continue;
 
-        data[panel.data("filename") + "." + extension] = editor.getValue();
+        data[panel.dataset.filename + "." + extension] = editor.getValue();
         editor._is_dirty = false;
     }
     for (const [filename, file] of Object.entries(filedata)) {
@@ -679,44 +691,75 @@ function prepareFilesForSynthesis() {
 }
 
 function synthesizeAndRun() {
-    $('#synthesize-bar .query-alert').removeClass('fade').alert('close');
-    $('form').find('input, textarea, button, select').prop('disabled', true);
+    $$('#synthesize-bar .query-alert').forEach(element => {
+        element.classList.remove('fade');
+        new bootstrap.Alert(element).close()
+    });
+    $$('form input, form textarea, form button, form select').forEach(element => {
+        element.disabled = true;
+    });
     prepareFilesForSynthesis();
 }
 
-$('button[name=synthesize-btn]').on('click', e => {
+$('button[name=synthesize-btn]').addEventListener('click', e => {
     e.preventDefault();
     synthesizeAndRun();
 });
 
-$('button[name=pause]').click(e => {
+$('button[name=pause]').addEventListener('click', e => {
     circuit.stop();
 });
 
-$('button[name=resume]').click(e => {
+$('button[name=resume]').addEventListener('click', e => {
     circuit.start();
 });
 
-$('button[name=single]').click(e => {
+$('button[name=single]').addEventListener('click', e => {
     circuit.updateGates();
     updatebuttons();
 });
 
-$('button[name=next]').click(e => {
+$('button[name=next]').addEventListener('click', e => {
     circuit.updateGatesNext();
     updatebuttons();
 });
 
-$('button[name=fastfw]').click(e => {
+$('button[name=fastfw]').addEventListener('click', e => {
     circuit.startFast();
     updatebuttons();
 });
 
-$('button[name=load]').click(e => {
-    $('#input_load').trigger('click');
+$('button[name=load]').addEventListener('click', e => {
+    $('#input_load').click();
+});
+    
+$('#monitorbox button[name=ppt_up]').addEventListener('click', e => {
+    if (!monitorview) return;
+    monitorview.pixelsPerTick *= 2;
 });
 
-$('#input_load').change(e => {
+$('#monitorbox button[name=ppt_down]').addEventListener('click', e => {
+    if (!monitorview) return;
+    monitorview.pixelsPerTick /= 2;
+});
+
+$('#monitorbox button[name=left]').addEventListener('click', e => {
+    if (!monitorview) return;
+    monitorview.live = false; monitorview.start -= monitorview.width / monitorview.pixelsPerTick / 4;
+});
+
+$('#monitorbox button[name=right]').addEventListener('click', e => { 
+    if (!monitorview) return;
+    monitorview.live = false; monitorview.start += monitorview.width / monitorview.pixelsPerTick / 4;
+});
+
+$('#monitorbox button[name=live]').addEventListener('click', e => { 
+    if (!monitorview) return;
+    monitorview.live = !monitorview.live;
+    if (monitorview.live) monitorview.start = circuit.tick - monitorview.width / monitorview.pixelsPerTick;
+});
+
+$('#input_load').addEventListener('change', e => {
     const files = e.target.files;
     if (!files) return;
     const reader = new FileReader();
@@ -727,84 +770,92 @@ $('#input_load').change(e => {
     reader.readAsText(files[0]);
 });
 
-$('button[name=save]').click(e => {
+$('button[name=save]').addEventListener('click', e => {
     const json = circuit.toJSON();
     const blob = new Blob([JSON.stringify(json)], {type: "application/json;charset=utf-8"});
     saveAs(blob, 'circuit.json');
 });
 
-$('button[name=link]')
-    .popover({
-        container: 'body',
-        content: 'blah',
-        trigger: 'manual',
-        html: true
-    })
-    .popover('disable')
-    .click(e => {
-        const json = circuit.toJSON();
-        $.ajax({
-            type: 'POST',
-            url: '/api/storeCircuit',
-            contentType: "application/json",
-            data: JSON.stringify(json),
-            dataType: 'json',
-            success: (responseData, status, xhr) => {
-                history.replaceState(null, null, '#'+responseData);
-                $(e.target)
-                    .attr('data-content', '<div class="btn-toolbar"><div class="input-group mr-2"><input readonly="readonly" id="linkinput" type="text" value="' + window.location.href + '"></div><div class="btn-group mr-2"><button type="button" data-clipboard-target="#linkinput" class="btn clipboard btn-secondary">Copy link</button></div></div>')
-                    .popover('enable')
-                    .popover('show');
-            }
-        });
-    })
-    .on("hidden.bs.popover", function() { $(this).popover('disable') });
+const linkBtn = $('button[name=link]');
 
-$('html').click(e => {
-    if (!$(e.target).closest('button[name=link]').length &&
-        !$(e.target).closest('.popover').length)
-        $('button[name=link]').popover('hide');
+const linkBtnPopover = new bootstrap.Popover(linkBtn, {
+    container: 'body',
+    content: 'blah',
+    trigger: 'manual',
+    html: true,
+    sanitize: false
+});
+
+linkBtnPopover.disable();
+
+linkBtn.addEventListener('click', e => {
+    const json = circuit.toJSON();
+    fetch('/api/storeCircuit', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(json)
+    })
+    .then(res => {
+        if (!res.ok) return res.json().then(err => Promise.reject(err));
+        return res.json();
+    })
+    .then(responseData => {
+        history.replaceState(null, null, '#'+responseData);
+        linkBtnPopover.setContent({'.popover-body': 
+            '<div class="btn-toolbar"><div class="input-group me-2"><input readonly="readonly" id="linkinput" type="text" value="' + window.location.href + '"></div><div class="btn-group me-2"><button type="button" data-clipboard-target="#linkinput" class="btn clipboard btn-secondary">Copy link</button></div></div>'
+        });
+        linkBtnPopover.enable();
+        linkBtnPopover.show();
+    });
+});
+
+linkBtn.addEventListener("hidden.bs.popover", () => { linkBtnPopover.disable(); });
+
+document.addEventListener('click', e => {
+    if (!e.target.closest('button[name=link]') && !e.target.closest('.popover'))
+        linkBtnPopover.hide();
 });
 
 window.onpopstate = () => {
     const hash = window.location.hash.slice(1);
     if (loading || !hash) return;
     destroycircuit();
-    $.ajax({
-        type: 'GET',
-        url: '/api/circuit/' + hash,
-        dataType: 'json',
-        success: (responseData, status, xhr) => {
-            mkcircuit(responseData);
-        },
-        error: (request, status, error) => {
-            loading = false;
-            updatebuttons();
-        }
+    fetch('/api/circuit/' + hash, {
+        method: 'GET'
+    })
+    .then(res => {
+        if (!res.ok) return res.json().then(err => Promise.reject(err));
+        return res.json();
+    })
+    .then(responseData => {
+        mkcircuit(responseData);
+    })
+    .catch(error => {
+        loading = false;
+        updatebuttons();
     });
 };
 
 updatebuttons();
-$('#monitorbox button').prop('disabled', true).off();
+$$('#monitorbox button').forEach(btn => { btn.disabled = true; });
 
 if (window.location.hash.slice(1))
     window.onpopstate();
 
 new ClipboardJS('button.clipboard');
 
-$('[data-bs-toggle="tooltip"]').tooltip();
-
-});
-
-
 function openTab(tabClass) {
-    $('.tab-wrapper').removeClass('active');
-    $('.tab-btn').removeClass('active');
-    $(`.${tabClass}`).addClass('active');
+    $$('.tab-wrapper').forEach(element => { element.classList.remove('active'); });
+    $$('.tab-btn').forEach(element => { element.classList.remove('active'); });
+    $$(`.${tabClass}`).forEach(element => { element.classList.add('active'); });
 }
 
 const editorTabClass = 'editor-tab';
 const circuitTabClass = 'circuit-tab';
 
-$(`button.${editorTabClass}`).click(() => openTab(editorTabClass));
-$(`button.${circuitTabClass}`).click(() => openTab(circuitTabClass));
+$(`button.${editorTabClass}`).addEventListener('click', () => openTab(editorTabClass));
+$(`button.${circuitTabClass}`).addEventListener('click', () => openTab(circuitTabClass));
+
+});

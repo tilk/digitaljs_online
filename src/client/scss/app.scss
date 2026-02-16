@@ -1,11 +1,11 @@
-@import "~bootstrap/scss/bootstrap";
-@import "./global-vars.scss";
+@use "~bootstrap/scss/bootstrap";
+@use "global-vars.scss";
 
-@import "./split-gutters.module.scss";
-@import "./toolbar.module.scss";
-@import "./monitorbox.module.scss";
-@import "./editor.module.scss";
-@import "./tab-buttons.module.scss";
+@use "split-gutters.module.scss";
+@use "toolbar.module.scss";
+@use "monitorbox.module.scss";
+@use "editor.module.scss";
+@use "tab-buttons.module.scss";
 
 body {
     height: 100vh;
@@ -57,10 +57,6 @@ div.tab-content form {
     height: auto !important;
 }
 
-.symbola {
-    font-family: "Symbola", $font-family-sans-serif;
-}
-
 .zoom-buttons-wrapper {
     position: absolute;
     right: 0;
@@ -69,7 +65,7 @@ div.tab-content form {
 }
 
 
-@media (max-width: $mobile-ui-max-width) {
+@media (max-width: global-vars.$mobile-ui-max-width) {
     .main-wrapper-grid {
         grid-template-rows: min-content 1fr 0;
         height: calc(100vh - 3.8rem);
