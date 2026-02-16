@@ -54,13 +54,6 @@ export default (env, argv) => {
                     type: 'asset'
                 },
                 {
-                    test: require.resolve('jquery'),
-                    loader: 'expose-loader',
-                    options: {
-                        exposes: ['$']
-                    }
-                },
-                {
                     test: /\.svg$/,
                     type: "asset/inline",
                     // Inline assets with the "inline" query parameter.
