@@ -37,18 +37,18 @@ const html = (strings, ...values) => {
   return template.content.firstElementChild;
 };
 
-const query = (sel, root = document) => root.querySelector(sel);
-const queryAll = (sel, root = document) => root.querySelectorAll(sel);
+const $ = (sel, root = document) => root.querySelector(sel);
+const $$ = (sel, root = document) => root.querySelectorAll(sel);
 
 window.addEventListener('DOMContentLoaded', () => {
 
 Split({
     columnGutters: [{
-        element: query('#gutter_horiz'),
+        element: $('#gutter_horiz'),
         track: 1
     }],
     rowGutters: [{
-        element: query('#gutter_vert'),
+        element: $('#gutter_vert'),
         track: 1
     }],
     columnMinSize: '100px',
@@ -68,13 +68,13 @@ function make_alert(type, ...content) {
 function handle_luaerror(name, e) {
     const pre = document.createElement('pre');
     pre.textContent = e.luaMessage;
-    query('#' + name + " > div:last-child > div:last-child").append(make_alert('danger', pre));
+    $('#' + name + " > div:last-child > div:last-child").append(make_alert('danger', pre));
 }
 
 function make_luarunner(name, circuit) {
     helpers[name] = new digitaljs_lua.LuaRunner(circuit); 
     helpers[name].on('thread:stop', (pid) => {
-        const panel = query('#' + name);
+        const panel = $('#' + name);
         panel.querySelector('textarea').disabled = false;
         panel.querySelector('button[name=luarun]').disabled = false;
         panel.querySelector('button[name=luastop]').disabled = true;
@@ -85,7 +85,7 @@ function make_luarunner(name, circuit) {
     helpers[name].on('print', msgs => {
         const pre = document.createElement('pre');
         pre.textContent = msgs.join('\t');
-        query('#' + name + '> div:last-child > div:last-child').append(make_alert('info', pre));
+        $('#' + name + '> div:last-child > div:last-child').append(make_alert('info', pre));
     });
 }
 
@@ -102,11 +102,11 @@ function close_tab (tab_a)
     var tabContentId = tab_a.getAttribute("href");
     var li_list = tab_a.parentElement;
     tab_a.remove(); //remove li of tab
-    if (window.getComputedStyle(query(tabContentId)).display !== 'none') {
+    if (window.getComputedStyle($(tabContentId)).display !== 'none') {
         const bs_tab = new bootstrap.Tab(li_list.querySelector("a"));
         bs_tab.show(); // Select first tab
     }
-    query(tabContentId).remove(); //remove respective tab content
+    $(tabContentId).remove(); //remove respective tab content
     const name = tabContentId.substring(1);
     delete editors[name];
     if (helpers[name]) helpers[name].shutdown();
@@ -114,7 +114,7 @@ function close_tab (tab_a)
 }
 
 function find_filename(name) {
-    const list = [...queryAll('#editor-tab > .tab-content > .tab-pane')].filter(el => el.dataset.fullname == name);
+    const list = [...$$('#editor-tab > .tab-content > .tab-pane')].filter(el => el.dataset.fullname == name);
     if (list.length == 0) return;
     return list[0].id;
 }
@@ -127,7 +127,7 @@ function make_tab(maybeFilename, extension, content) {
 
     const orig_filename = filename;
     let fcnt = 0;
-    while ([...queryAll('#editor-tab > .tab-content > .tab-pane')]
+    while ([...$$('#editor-tab > .tab-content > .tab-pane')]
             .filter(el => el.dataset.filename == filename && el.dataset.extension == extension).length) {
         filename = orig_filename + fcnt++;
     }
@@ -136,7 +136,7 @@ function make_tab(maybeFilename, extension, content) {
     tab.setAttribute('href', '#' + name);
     tab.setAttribute('aria-controls', name);
     tab.textContent = filename + '.' + extension;
-    query('#editor-tab > nav div').append(tab);
+    $('#editor-tab > nav div').append(tab);
     const download_btn = html`<button class="btn-custom closeTab" type="button">📥</button>`;
     download_btn.addEventListener('click', e => { download_tab(tab, filename, extension); });
     tab.append(download_btn);
@@ -148,7 +148,7 @@ function make_tab(maybeFilename, extension, content) {
     panel.setAttribute('data-filename', filename);
     panel.setAttribute('data-extension', extension);
     panel.setAttribute('data-fullname', filename + '.' + extension);
-    query('#editor-tab > .tab-content').append(panel);
+    $('#editor-tab > .tab-content').append(panel);
     const ed_div = document.createElement('textarea');
     ed_div.value = content;
     panel.append(ed_div);
@@ -271,9 +271,9 @@ class Circuit(Component):
     }
 }
 
-query('#newtab').addEventListener('click', e => {
-    const maybeFilename = query('#start input[name=newtabname]').value;
-    const extension = query("#exten").dataset.extension;
+$('#newtab').addEventListener('click', e => {
+    const maybeFilename = $('#start input[name=newtabname]').value;
+    const extension = $("#exten").dataset.extension;
     const initial = getDefaultContent(extension);
     make_tab(maybeFilename, extension, initial);
 });
@@ -281,7 +281,7 @@ query('#newtab').addEventListener('click', e => {
 for (const [file, name] of examples) {
     const link = html`<a class="dropdown-item" href="">`;
     link.textContent = name;
-    query('#excodes').append(link);
+    $('#excodes').append(link);
     link.addEventListener('click', e => {
         e.preventDefault();
         fetch('/examples/' + file + '.sv')
@@ -292,16 +292,16 @@ for (const [file, name] of examples) {
     });
 }
 
-query('#extens').addEventListener('click', e => {
+$('#extens').addEventListener('click', e => {
     const link = e.target.closest('a');
     if (!link) return;
     const ext = link.dataset.extension;
-    query('#exten').textContent = '.' + ext;
-    query('#exten').dataset.extension = ext;
+    $('#exten').textContent = '.' + ext;
+    $('#exten').dataset.extension = ext;
 });
 
 const droppable = new Droppable({
-    element: query('#dropzone')
+    element: $('#dropzone')
 });
 
 droppable.onFilesDropped((files) => {
@@ -320,11 +320,11 @@ droppable.onFilesDropped((files) => {
 let loading = false, circuit, paper, monitor, monitorview, monitormem, iopanel, filedata, filenum;
 
 function updatebuttons() {
-    const toolbar = query('#toolbar');
+    const toolbar = $('#toolbar');
     if (circuit == undefined) {
         toolbar.querySelectorAll('button:not([name=synthesize-btn])').forEach(elem => { elem.disabled = true; });
-        queryAll('button.circuit-tab').forEach(elem => { elem.disabled = true; });
-        query('.zoom-buttons-wrapper').classList.add('d-none');
+        $$('button.circuit-tab').forEach(elem => { elem.disabled = true; });
+        $('.zoom-buttons-wrapper').classList.add('d-none');
         if (!loading) toolbar.querySelector('button[name=load]').disabled = false;
         return;
     }
@@ -338,8 +338,8 @@ function updatebuttons() {
     toolbar.querySelector('button[name=next]').disabled = running || !circuit.hasPendingEvents;
     toolbar.querySelector('button[name=fastfw]').disabled = running;
     monitorview.autoredraw = !running;
-    queryAll('button.circuit-tab').forEach(elem => { elem.disabled = false; });
-    query('.zoom-buttons-wrapper').classList.remove('d-none');
+    $$('button.circuit-tab').forEach(elem => { elem.disabled = false; });
+    $('.zoom-buttons-wrapper').classList.remove('d-none');
 }
 
 function destroycircuit() {
@@ -370,11 +370,11 @@ function destroycircuit() {
     for (const h of Object.values(helpers)) {
         h.shutdown();
     }
-    queryAll('#editor-tab > .tab-content > div[data-extension=lua] button').forEach(elem => { elem.disabled = true; });
+    $$('#editor-tab > .tab-content > div[data-extension=lua] button').forEach(elem => { elem.disabled = true; });
     helpers = {};
     loading = true;
     updatebuttons();
-    queryAll('#monitorbox button').forEach(btn => { btn.disabled = true; });
+    $$('#monitorbox button').forEach(btn => { btn.disabled = true; });
 }
 
 function mk_markers(paper) {
@@ -400,12 +400,12 @@ function mk_markers(paper) {
 
 function mkcircuit(data, opts) {
     loading = false;
-    queryAll('form input, form textarea, form button, form select').forEach(element => {
+    $$('form input, form textarea, form button, form select').forEach(element => {
         element.disabled = false;
     });
     circuit = new digitaljs.Circuit(data, opts);
     circuit.on('postUpdateGates', (tick) => {
-        query('#tick').value = tick;
+        $('#tick').value = tick;
     });
     circuit.start();
     monitor = new digitaljs.Monitor(circuit);
@@ -413,9 +413,9 @@ function mkcircuit(data, opts) {
         monitor.loadWiresDesc(monitormem);
         monitormem = undefined;
     }
-    monitorview = new digitaljs.MonitorView({model: monitor, el: query('#monitor') });
+    monitorview = new digitaljs.MonitorView({model: monitor, el: $('#monitor') });
     iopanel = new digitaljs.IOPanelView({
-        model: circuit, el: query('#iopanel'),
+        model: circuit, el: $('#iopanel'),
         rowMarkup: '<div class="mb-3 row"></div>',
         labelMarkup: '<label class="col-sm-4 control-label"></label>',
         colMarkup: '<div class="col-sm-8"></div>',
@@ -424,12 +424,12 @@ function mkcircuit(data, opts) {
         inputMarkup: '<input type="text" class="me-2">'
     });
     const targetDiv = document.createElement('div');
-    query('#paper').append(targetDiv);
+    $('#paper').append(targetDiv);
     paper = circuit.displayOn(targetDiv);
     mk_markers(paper);
     circuit.on('new:paper', (paper) => { mk_markers(paper); });
     for (const name of Object.keys(editors)) {
-        if (query('#' + name).dataset.extension == 'lua') 
+        if ($('#' + name).dataset.extension == 'lua') 
             make_luarunner(name, circuit);
     }
     circuit.on('userChange', () => {
@@ -439,25 +439,25 @@ function mkcircuit(data, opts) {
         updatebuttons();
     });
     updatebuttons();
-    queryAll('#editor-tab > .tab-content > div[data-extension=lua] button[name=luarun]')
+    $$('#editor-tab > .tab-content > div[data-extension=lua] button[name=luarun]')
         .forEach(btn => { btn.disabled = false; });
-    queryAll('#monitorbox button')
+    $$('#monitorbox button')
         .forEach(btn => { btn.disabled = false; });
-    query('#monitorbox button[name=live]').classList.toggle('active', monitorview.live)
+    $('#monitorbox button[name=live]').classList.toggle('active', monitorview.live)
     monitorview.on('change:live', (live) => { 
-        query('#monitorbox button[name=live]').classList.toggle('active', live);
+        $('#monitorbox button[name=live]').classList.toggle('active', live);
     });
     monitor.on('add', () => {
-        if (query('#monitorbox').getBoundingClientRect().height == 0) {
-            query('.grid').classList.add('monitor-open');
+        if ($('#monitorbox').getBoundingClientRect().height == 0) {
+            $('.grid').classList.add('monitor-open');
         }
     });
     const show_range = () => {
-        query('#monitorbox input[name=rangel]').value = Math.round(monitorview.start);
-        query('#monitorbox input[name=rangeh]').value = Math.round(monitorview.start + monitorview.width / monitorview.pixelsPerTick);
+        $('#monitorbox input[name=rangel]').value = Math.round(monitorview.start);
+        $('#monitorbox input[name=rangeh]').value = Math.round(monitorview.start + monitorview.width / monitorview.pixelsPerTick);
     };
     const show_scale = () => {
-        query('#monitorbox input[name=scale]').value = monitorview.gridStep;
+        $('#monitorbox input[name=scale]').value = monitorview.gridStep;
     };
     show_range();
     show_scale();
@@ -465,18 +465,18 @@ function mkcircuit(data, opts) {
     monitorview.on('change:pixelsPerTick', show_scale);
 
     let paperScale = 0;
-    query('button[name=zoom-in]').addEventListener('click', e => {
+    $('button[name=zoom-in]').addEventListener('click', e => {
         paperScale++;
         circuit.scaleAndRefreshPaper(paper, paperScale);
      });
 
-    query('button[name=zoom-out]').addEventListener('click', e => {
+    $('button[name=zoom-out]').addEventListener('click', e => {
         paperScale--;
         circuit.scaleAndRefreshPaper(paper, paperScale);
     });
 
     paper.on('scale', (currentScale) => {
-       query('button[name=zoom-in]').disabled = currentScale >= 5;
+       $('button[name=zoom-in]').disabled = currentScale >= 5;
     });
 }
 
@@ -521,9 +521,9 @@ function updateLint(lint) {
 }
 
 function postSynthesis(circuit, lint) {
-    const transform = query('#transform').checked;
-    const layoutEngine = query('#layout').value;
-    const simEngine = query('#engine').value;
+    const transform = $('#transform').checked;
+    const layoutEngine = $('#layout').value;
+    const simEngine = $('#engine').value;
     const engines = { synch: digitaljs.engines.BrowserSynchEngine, worker: digitaljs.engines.WorkerEngine };
 
     if (transform) digitaljs.transform.transformCircuit(circuit)
@@ -538,12 +538,12 @@ function showSynthesisError(errorTitle, details, lint) {
     loading = false;
     updatebuttons();
     updateLint(lint);
-    queryAll('form input, form textarea, form button, form select').forEach(element => {
+    $$('form input, form textarea, form button, form select').forEach(element => {
         element.disabled = false;
     });
     const pre = document.createElement('pre');
     pre.textContent = details;
-    query('#paper').append(make_alert('danger', document.createTextNode(errorTitle), pre));
+    $('#paper').append(make_alert('danger', document.createTextNode(errorTitle), pre));
 }
 
 let synthesisWorker = null;
@@ -608,18 +608,18 @@ const synthesisStrategies = {
 
 function synthesize(files) {
     if (Object.keys(files).length == 0) {
-        query('#paper').append(make_alert('danger', document.createTextNode("No source files for synthesis.")));
+        $('#paper').append(make_alert('danger', document.createTextNode("No source files for synthesis.")));
         return;
     }
     const opts = {
-        optimize: query('#opt').checked,
-        fsm: query('#fsm').value,
-        fsmexpand: query('#fsmexpand').checked,
-        lint: query('#lint').checked
+        optimize: $('#opt').checked,
+        fsm: $('#fsm').value,
+        fsmexpand: $('#fsmexpand').checked,
+        lint: $('#lint').checked
     };
     destroycircuit();
 
-    const synthesisMode = query('#synthesis-mode').value;
+    const synthesisMode = $('#synthesis-mode').value;
 
     synthesisStrategies[synthesisMode](files, opts);
 }
@@ -651,7 +651,7 @@ function processFiles() {
     const synthesizableExtensions = new Set(['sv', 'v', 'vh', 'py']);
     const data = {};
     for (const [name, editor] of Object.entries(editors)) {
-        const panel = query('#' + name);
+        const panel = $('#' + name);
         const extension = panel.dataset.extension;
 
         if (!synthesizableExtensions.has(extension)) continue;
@@ -691,75 +691,75 @@ function prepareFilesForSynthesis() {
 }
 
 function synthesizeAndRun() {
-    queryAll('#synthesize-bar .query-alert').forEach(element => {
+    $$('#synthesize-bar .query-alert').forEach(element => {
         element.classList.remove('fade');
         new bootstrap.Alert(element).close()
     });
-    queryAll('form input, form textarea, form button, form select').forEach(element => {
+    $$('form input, form textarea, form button, form select').forEach(element => {
         element.disabled = true;
     });
     prepareFilesForSynthesis();
 }
 
-query('button[name=synthesize-btn]').addEventListener('click', e => {
+$('button[name=synthesize-btn]').addEventListener('click', e => {
     e.preventDefault();
     synthesizeAndRun();
 });
 
-query('button[name=pause]').addEventListener('click', e => {
+$('button[name=pause]').addEventListener('click', e => {
     circuit.stop();
 });
 
-query('button[name=resume]').addEventListener('click', e => {
+$('button[name=resume]').addEventListener('click', e => {
     circuit.start();
 });
 
-query('button[name=single]').addEventListener('click', e => {
+$('button[name=single]').addEventListener('click', e => {
     circuit.updateGates();
     updatebuttons();
 });
 
-query('button[name=next]').addEventListener('click', e => {
+$('button[name=next]').addEventListener('click', e => {
     circuit.updateGatesNext();
     updatebuttons();
 });
 
-query('button[name=fastfw]').addEventListener('click', e => {
+$('button[name=fastfw]').addEventListener('click', e => {
     circuit.startFast();
     updatebuttons();
 });
 
-query('button[name=load]').addEventListener('click', e => {
-    query('#input_load').click();
+$('button[name=load]').addEventListener('click', e => {
+    $('#input_load').click();
 });
     
-query('#monitorbox button[name=ppt_up]').addEventListener('click', e => {
+$('#monitorbox button[name=ppt_up]').addEventListener('click', e => {
     if (!monitorview) return;
     monitorview.pixelsPerTick *= 2;
 });
 
-query('#monitorbox button[name=ppt_down]').addEventListener('click', e => {
+$('#monitorbox button[name=ppt_down]').addEventListener('click', e => {
     if (!monitorview) return;
     monitorview.pixelsPerTick /= 2;
 });
 
-query('#monitorbox button[name=left]').addEventListener('click', e => {
+$('#monitorbox button[name=left]').addEventListener('click', e => {
     if (!monitorview) return;
     monitorview.live = false; monitorview.start -= monitorview.width / monitorview.pixelsPerTick / 4;
 });
 
-query('#monitorbox button[name=right]').addEventListener('click', e => { 
+$('#monitorbox button[name=right]').addEventListener('click', e => { 
     if (!monitorview) return;
     monitorview.live = false; monitorview.start += monitorview.width / monitorview.pixelsPerTick / 4;
 });
 
-query('#monitorbox button[name=live]').addEventListener('click', e => { 
+$('#monitorbox button[name=live]').addEventListener('click', e => { 
     if (!monitorview) return;
     monitorview.live = !monitorview.live;
     if (monitorview.live) monitorview.start = circuit.tick - monitorview.width / monitorview.pixelsPerTick;
 });
 
-query('#input_load').addEventListener('change', e => {
+$('#input_load').addEventListener('change', e => {
     const files = e.target.files;
     if (!files) return;
     const reader = new FileReader();
@@ -770,13 +770,13 @@ query('#input_load').addEventListener('change', e => {
     reader.readAsText(files[0]);
 });
 
-query('button[name=save]').addEventListener('click', e => {
+$('button[name=save]').addEventListener('click', e => {
     const json = circuit.toJSON();
     const blob = new Blob([JSON.stringify(json)], {type: "application/json;charset=utf-8"});
     saveAs(blob, 'circuit.json');
 });
 
-const linkBtn = query('button[name=link]');
+const linkBtn = $('button[name=link]');
 
 const linkBtnPopover = new bootstrap.Popover(linkBtn, {
     container: 'body',
@@ -839,7 +839,7 @@ window.onpopstate = () => {
 };
 
 updatebuttons();
-queryAll('#monitorbox button').forEach(btn => { btn.disabled = true; });
+$$('#monitorbox button').forEach(btn => { btn.disabled = true; });
 
 if (window.location.hash.slice(1))
     window.onpopstate();
@@ -847,15 +847,15 @@ if (window.location.hash.slice(1))
 new ClipboardJS('button.clipboard');
 
 function openTab(tabClass) {
-    queryAll('.tab-wrapper').forEach(element => { element.classList.remove('active'); });
-    queryAll('.tab-btn').forEach(element => { element.classList.remove('active'); });
-    queryAll(`.${tabClass}`).forEach(element => { element.classList.add('active'); });
+    $$('.tab-wrapper').forEach(element => { element.classList.remove('active'); });
+    $$('.tab-btn').forEach(element => { element.classList.remove('active'); });
+    $$(`.${tabClass}`).forEach(element => { element.classList.add('active'); });
 }
 
 const editorTabClass = 'editor-tab';
 const circuitTabClass = 'circuit-tab';
 
-query(`button.${editorTabClass}`).addEventListener('click', () => openTab(editorTabClass));
-query(`button.${circuitTabClass}`).addEventListener('click', () => openTab(circuitTabClass));
+$(`button.${editorTabClass}`).addEventListener('click', () => openTab(editorTabClass));
+$(`button.${circuitTabClass}`).addEventListener('click', () => openTab(circuitTabClass));
 
 });
