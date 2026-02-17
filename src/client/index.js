@@ -524,11 +524,12 @@ function postSynthesis(circuit, lint) {
     const transform = $('#transform').checked;
     const layoutEngine = $('#layout').value;
     const simEngine = $('#engine').value;
+    const defaultCombProp = $('#no-comb-delay').checked ? 0 : 1;
     const engines = { synch: digitaljs.engines.BrowserSynchEngine, worker: digitaljs.engines.WorkerEngine };
 
     if (transform) digitaljs.transform.transformCircuit(circuit)
 
-    mkcircuit(circuit, {layoutEngine: layoutEngine, engine: engines[simEngine]});
+    mkcircuit(circuit, {layoutEngine: layoutEngine, engine: engines[simEngine], defaultCombinationalPropagation: defaultCombProp});
     updateLint(lint);
     openTab(circuitTabClass);
 }
