@@ -616,8 +616,20 @@ function synthesize(files) {
         optimize: $('#opt').checked,
         fsm: $('#fsm').value,
         fsmexpand: $('#fsmexpand').checked,
-        lint: $('#lint').checked
+        lint: $('#lint').checked,
+        techmap: $('#techmap').checked
     };
+    if ($('#abc_gates').checked) {
+        opts.abc = {
+            type: 'gates',
+            kinds: ["AND", "NAND", "OR", "NOR", "XOR", "XNOR", "MUX"].filter(n => $('#abc_gates_' + n).checked)
+        };
+    } else if ($('#abc_luts').checked) {
+        opts.abc = {
+            type: 'lut',
+            width: Number($('#abc_luts_width').value)
+        };
+    }
     destroycircuit();
 
     const synthesisMode = $('#synthesis-mode').value;

@@ -144,10 +144,72 @@
                       <option value="nomap">FSM as circuit element</option>
                     </select>
                   </div>
-                  <div class="mb-3 form-check" data-bs-toggle="tooltip"
+                  <div class="ms-4 mb-3 form-check" data-bs-toggle="tooltip"
                     title="This corresponds to the 'fsm_expand' Yosys command.">
                     <input type="checkbox" id="fsmexpand" class="form-check-input">
                     <label for="fsmexpand" class="form-check-label">Merge more logic into FSM</label>
+                  </div>
+                  <div class="mb-2 form-check" data-bs-toggle="tooltip"
+                    title="This corresponds to the 'techmap' Yosys command.">
+                    <input type="checkbox" id="techmap" class="form-check-input">
+                    <label for="techmap" class="form-check-label">Convert to logic gates</label>
+                  </div>
+                  <div class="ms-4" id="techmapOptions">
+                    <div class="mb-2 form-check" data-bs-toggle="tooltip"
+                      title="Don't run the 'abc' Yosys command.">
+                      <input type="radio" id="abc_disable" name="abc" class="form-check-input" checked>
+                      <label for="abc_disable" class="form-check-label">Keep gates unprocessed</label>
+                    </div>
+                    <div class="mb-2 form-check" data-bs-toggle="tooltip"
+                      title="This corresponds to the 'abc -g GATELIST' Yosys command.">
+                      <input type="radio" id="abc_gates" name="abc" class="form-check-input">
+                      <label for="abc_gates" class="form-check-label">Map into subset of gates</label>
+                    </div>
+                    <div class="ms-4 mb-2" id="abcGateOptions">
+                      <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="checkbox" id="abc_gates_AND" value="AND" checked>
+                        <label class="form-check-label" for="abc_gates_AND">AND</label>
+                      </div>
+                      <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="checkbox" id="abc_gates_NAND" value="NAND" checked>
+                        <label class="form-check-label" for="abc_gates_NAND">NAND</label>
+                      </div>
+                      <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="checkbox" id="abc_gates_OR" value="OR" checked>
+                        <label class="form-check-label" for="abc_gates_OR">OR</label>
+                      </div>
+                      <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="checkbox" id="abc_gates_NOR" value="NOR" checked>
+                        <label class="form-check-label" for="abc_gates_NOR">NOR</label>
+                      </div>
+                      <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="checkbox" id="abc_gates_XOR" value="XOR" checked>
+                        <label class="form-check-label" for="abc_gates_XOR">XOR</label>
+                      </div>
+                      <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="checkbox" id="abc_gates_XNOR" value="XNOR" checked>
+                        <label class="form-check-label" for="abc_gates_XNOR">XNOR</label>
+                      </div>
+                      <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="checkbox" id="abc_gates_MUX" value="MUX" checked>
+                        <label class="form-check-label" for="abc_gates_MUX">MUX</label>
+                      </div>
+                    </div>
+                    <div class="mb-2 form-check" data-bs-toggle="tooltip"
+                      title="This corresponds to the 'abc -lut N' Yosys command.">
+                      <input type="radio" id="abc_luts" name="abc" class="form-check-input">
+                      <label for="abc_luts" class="form-check-label">Map into LUTs</label>
+                    </div>
+                    <div class="ms-4 mb-3 row g-3 align-items-center">
+                      <div class="col-auto">
+                        <input type="number" id="abc_luts_width" value="4" class="form-control" min="2" max="8" step="1" aria-describedby="abc_luts_help">
+                      </div>
+                      <div class="col-auto">
+                        <span id="abc_luts_help" class="form-text">
+                          Width of generated LUTs
+                        </span>
+                      </div>
+                    </div>
                   </div>
                   <div class="mb-3" data-bs-toggle="tooltip"
                     title="Changes how the circuit is being synthesized.">
