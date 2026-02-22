@@ -144,7 +144,7 @@
                       <option value="nomap">FSM as circuit element</option>
                     </select>
                   </div>
-                  <div class="ms-4 mb-3 form-check" data-bs-toggle="tooltip"
+                  <div class="ms-4 mb-3 form-check collapse" data-bs-toggle="tooltip" id="fsmOptions"
                     title="This corresponds to the 'fsm_expand' Yosys command.">
                     <input type="checkbox" id="fsmexpand" class="form-check-input">
                     <label for="fsmexpand" class="form-check-label">Merge more logic into FSM</label>
@@ -154,7 +154,7 @@
                     <input type="checkbox" id="techmap" class="form-check-input">
                     <label for="techmap" class="form-check-label">Convert to logic gates</label>
                   </div>
-                  <div class="ms-4" id="techmapOptions">
+                  <div class="ms-4 collapse" id="techmapOptions">
                     <div class="mb-2 form-check" data-bs-toggle="tooltip"
                       title="Don't run the 'abc' Yosys command.">
                       <input type="radio" id="abc_disable" name="abc" class="form-check-input" checked>
@@ -165,7 +165,7 @@
                       <input type="radio" id="abc_gates" name="abc" class="form-check-input">
                       <label for="abc_gates" class="form-check-label">Map into subset of gates</label>
                     </div>
-                    <div class="ms-4 mb-2" id="abcGateOptions">
+                    <div class="ms-4 mb-2 collapse" id="abcGateOptions">
                       <div class="form-check form-check-inline">
                         <input class="form-check-input" type="checkbox" id="abc_gates_AND" value="AND" checked>
                         <label class="form-check-label" for="abc_gates_AND">AND</label>
@@ -200,7 +200,7 @@
                       <input type="radio" id="abc_luts" name="abc" class="form-check-input">
                       <label for="abc_luts" class="form-check-label">Map into LUTs</label>
                     </div>
-                    <div class="ms-4 mb-3 row g-3 align-items-center">
+                    <div class="ms-4 mb-3 row g-3 align-items-center collapse" id="abcLutOptions">
                       <div class="col-auto">
                         <input type="number" id="abc_luts_width" value="4" class="form-control" min="2" max="8" step="1" aria-describedby="abc_luts_help">
                       </div>

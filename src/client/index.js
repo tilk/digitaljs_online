@@ -871,4 +871,19 @@ const circuitTabClass = 'circuit-tab';
 $(`button.${editorTabClass}`).addEventListener('click', () => openTab(editorTabClass));
 $(`button.${circuitTabClass}`).addEventListener('click', () => openTab(circuitTabClass));
 
+function updateFormCollapse() {
+    $('#fsmOptions').classList.toggle('show', $('#fsm').value != "");
+    $('#techmapOptions').classList.toggle('show', $('#techmap').checked);
+    $('#abcGateOptions').classList.toggle('show', $('#abc_gates').checked);
+    $('#abcLutOptions').classList.toggle('show', $('#abc_luts').checked);
+}
+
+$('#fsm').addEventListener('change', updateFormCollapse);
+$('#techmap').addEventListener('change', updateFormCollapse);
+$('#abc_disable').addEventListener('change', updateFormCollapse);
+$('#abc_gates').addEventListener('change', updateFormCollapse);
+$('#abc_luts').addEventListener('change', updateFormCollapse);
+
+updateFormCollapse();
+
 });
