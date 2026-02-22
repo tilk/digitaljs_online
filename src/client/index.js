@@ -616,8 +616,20 @@ function synthesize(files) {
         optimize: $('#opt').checked,
         fsm: $('#fsm').value,
         fsmexpand: $('#fsmexpand').checked,
-        lint: $('#lint').checked
+        lint: $('#lint').checked,
+        techmap: $('#techmap').checked
     };
+    if ($('#abc_gates').checked) {
+        opts.abc = {
+            type: 'gates',
+            kinds: ["AND", "NAND", "OR", "NOR", "XOR", "XNOR", "MUX"].filter(n => $('#abc_gates_' + n).checked)
+        };
+    } else if ($('#abc_luts').checked) {
+        opts.abc = {
+            type: 'lut',
+            width: Number($('#abc_luts_width').value)
+        };
+    }
     destroycircuit();
 
     const synthesisMode = $('#synthesis-mode').value;
@@ -858,5 +870,20 @@ const circuitTabClass = 'circuit-tab';
 
 $(`button.${editorTabClass}`).addEventListener('click', () => openTab(editorTabClass));
 $(`button.${circuitTabClass}`).addEventListener('click', () => openTab(circuitTabClass));
+
+function updateFormCollapse() {
+    $('#fsmOptions').classList.toggle('show', $('#fsm').value != "");
+    $('#techmapOptions').classList.toggle('show', $('#techmap').checked);
+    $('#abcGateOptions').classList.toggle('show', $('#abc_gates').checked);
+    $('#abcLutOptions').classList.toggle('show', $('#abc_luts').checked);
+}
+
+$('#fsm').addEventListener('change', updateFormCollapse);
+$('#techmap').addEventListener('change', updateFormCollapse);
+$('#abc_disable').addEventListener('change', updateFormCollapse);
+$('#abc_gates').addEventListener('change', updateFormCollapse);
+$('#abc_luts').addEventListener('change', updateFormCollapse);
+
+updateFormCollapse();
 
 });
