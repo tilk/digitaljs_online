@@ -403,7 +403,9 @@ function mkcircuit(data, opts) {
     $$('form input, form textarea, form button, form select').forEach(element => {
         element.disabled = false;
     });
-    circuit = new digitaljs.Circuit(data, opts);
+    // gate symbol standard is purely presentational, so it is taken from the
+    // form on every path that creates a circuit (synthesis, load, permalink)
+    circuit = new digitaljs.Circuit(data, { symbols: $('#symbols').value, ...opts });
     circuit.on('postUpdateGates', (tick) => {
         $('#tick').value = tick;
     });
@@ -877,6 +879,10 @@ function updateFormCollapse() {
     $('#abcGateOptions').classList.toggle('show', $('#abc_gates').checked);
     $('#abcLutOptions').classList.toggle('show', $('#abc_luts').checked);
 }
+
+$('#symbols').addEventListener('change', e => {
+    if (circuit) circuit.setSymbols(e.target.value);
+});
 
 $('#fsm').addEventListener('change', updateFormCollapse);
 $('#techmap').addEventListener('change', updateFormCollapse);
